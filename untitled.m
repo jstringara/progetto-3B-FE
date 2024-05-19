@@ -107,7 +107,9 @@ plot(dates(698,2:end),zrates(698,:))
 % import quarterly future volumes 
 load('dates_front.mat')
 load('Volumes_March.mat')
+dates_front = Volumesextrafutures;
 dates_March=dates_front(90:2697);
+Volumes_March = Volumesextrafutures1;
 Volumes_March(isnan(Volumes_March))=0;
 Volumes_March=Volumes_March(90:2697,:);
 volumes_front_March=[];
@@ -151,10 +153,32 @@ for ii=1:10
     values=[];
 end
 figure(2)
-boxplot(log10(volumes_front_June))
+boxplot(log10(volumes_front_June+1))
 
 %% 
-
-
+load('Volumes_Sept.mat')
+Dates_Sept=dates_front(222:2852);
+Volumes_Sept=volumes_data_sept;
+Volumes_Sept(isnan(Volumes_Sept))=0;
+Volumes_Sept=Volumes_Sept(222:2852,:);
+volumes_front_Sept=[];
+inputFormat = 'dd-MMM-yyyy'; % Formato con giorno, mese abbreviato e anno
+locale = 'it_IT'; % Lingua locale italiana
+% Converti le stringhe di data in datetime
+Dates_Sept = datetime(Dates_Sept, 'InputFormat', inputFormat, 'Locale', locale);
+dates_start=datetime(Dates_Sept(1));
+dates_end=datetime('30-Aug-2013');
+values=[];
+for ii=1:10
+    j1=find(Dates_Sept>=dates_start,1);
+    j2=find(Dates_Sept>=dates_end,1);
+    values=Volumes_Sept(j1:j2-1,ii+1);
+    volumes_front_Sept=[volumes_front_Sept;values];
+    dates_start=dates_start+calyears(1);
+    dates_end=dates_end+calyears(1);
+    values=[];
+end
+figure(3)
+boxplot(log10(volumes_front_Sept+1))
 
 
