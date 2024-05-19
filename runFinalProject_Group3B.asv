@@ -52,17 +52,16 @@ dates(~isbusday(dates,eurCalendar())) = ...
 
 % compute the yearfractions
 ACT_360 = 3;
-THIRTY_360 = 6;
 yf = zeros(length(t0), length(offsets)-1);
 for i = 1:length(t0)
-    yf(i,:) = yearfrac(t0(i), dates(i,2:end), THIRTY_360);
+    yf(i,:) = yearfrac(t0(i), dates(i,2:end), ACT_360);
 end
 
 % compute the discounts factors curve for each date
 DF = zeros(length(t0), length(offsets)-1);
 
 % for dates less than one year, we compute directly
-DF(:,1:15) = 1./(1 + OIS_Data{:,2:16} .* yf(:,1:15));
+DF(:,1:15) = 1./(1 + OIS_Data{:,2:16} .* yf(:,1:15))
 
 S = yf(:,1:15) .* DF(:,15);
 

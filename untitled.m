@@ -66,7 +66,23 @@ DF(:,1:15) = 1./(1 + OIS_Data{:,2:16} .* yf(:,1:15));
 
 S = yf(:,1:15) .* DF(:,15);
 
-% for dates greater than one year, we use the previous discounts
+
+delta_3m=yearfrac(dates(:,7),dates(:,17),THIRTY_360); %delta between 3m and 15m
+delta_6m=yearfrac(dates(:,10),dates(:,18),THIRTY_360); %delta between 6m and 18m
+delta_9m=yearfrac(dates(:,13),dates(:,19),THIRTY_360); %delta between 9m and 21m
+
+DF(:,16)=(1-OIS_Data{:,17}.*yf(:,6).*DF(:,6))./(1+delta_3m.*OIS_Data{:,17});
+DF(:,17)=(1-OIS_Data{:,18}.*yf(:,9).*DF(:,9))./(1+delta_6m.*OIS_Data{:,18});
+DF(:,18)=(1-OIS_Data{:,19}.*yf(:,12).*DF(:,12))./(1+delta_9m.*OIS_Data{:,19});
+
+
+
+
+
+
+
+
+% % for dates greater than one year, we use the previous discounts
 for j = 16:length(offsets)-1
     % for each date, get the relevant OIS rate
     R = OIS_Data{:,j+1};
