@@ -47,11 +47,12 @@ for i = 1:length(dates)
 end
 
 % move to business days
-dates(~isbusday(dates,eurCalendar())) = ...
-    busdate(dates(~isbusday(dates, eurCalendar())), 'modifiedfollow', eurCalendar());
+dates(~isbusday(dates(:,2:end),eurCalendar())) = ...
+    busdate(dates(~isbusday(dates(:,2:end), eurCalendar())), 'modifiedfollow', eurCalendar());
 
 % compute the yearfractions
-ACT_360 = 3;
+ACT_360 = 2;
+ACT_365 = 3;
 THIRTY_360 = 6;
 yf = zeros(length(t0), length(offsets)-1);
 for i = 1:length(t0)
@@ -64,6 +65,7 @@ DF = zeros(length(t0), length(offsets)-1);
 % for dates less than one year, we compute directly
 DF(:,1:15) = 1./(1 + OIS_Data{:,2:16} .* yf(:,1:15));
 
+% inizializ the sum for 1y
 S = yf(:,1:15) .* DF(:,15);
 
 
@@ -75,18 +77,36 @@ DF(:,16)=(1-OIS_Data{:,17}.*yf(:,6).*DF(:,6))./(1+delta_3m.*OIS_Data{:,17});
 DF(:,17)=(1-OIS_Data{:,18}.*yf(:,9).*DF(:,9))./(1+delta_6m.*OIS_Data{:,18});
 DF(:,18)=(1-OIS_Data{:,19}.*yf(:,12).*DF(:,12))./(1+delta_9m.*OIS_Data{:,19});
 
+dates_1y=dates(:,[1,16,20:28]);
+delta_fwd_1y=yearfrac(dates_1y(:,1:end-1),dates_1y(:,2:end),THIRTY_360);
+
+S = delta_fwd_1y(:,1).* DF(:,15);
 
 
 
-
-
-
-
-% % for dates greater than one year, we use the previous discounts
-for j = 16:length(offsets)-1
+% for dates greater than 2 years (or equal), we use the previous discounts
+for j = 19:length(offsets)-1
     % for each date, get the relevant OIS rate
     R = OIS_Data{:,j+1};
-    DF(:,j) = (1 - R .* S) ./ (1 + yf(:,j) .* R);
+    DF(:,j) = (1 - R .* S) ./ (1 + delta_fwd_1y(:,j-17) .* R);
     % update the sum
-    S = S + yf(:,j) .* DF(:,j);
+    S = S + delta_fwd_1y(:,j-17) .* DF(:,j);
 end
+
+delta_rates = zeros(length(t0), length(offsets)-1);
+for i = 1:length(t0)
+    delta_rates(i,:) = yearfrac(t0(i), dates(i,2:end), ACT_365);
+end
+zrates = zeros(length(t0), length(offsets)-1);
+zrates = -log(DF)./delta_rates;
+
+find(zrates(698,:)>0.01,1)
+
+plot(dates(698,2:end),zrates(698,:))
+
+%% Point 2
+% import quarterly future volumes 
+
+Futures_March = 
+
+
