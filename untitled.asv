@@ -65,6 +65,7 @@ DF = zeros(length(t0), length(offsets)-1);
 % for dates less than one year, we compute directly
 DF(:,1:15) = 1./(1 + OIS_Data{:,2:16} .* yf(:,1:15));
 
+% inizializ the sum for 1y
 S = yf(:,1:15) .* DF(:,15);
 
 
@@ -99,5 +100,57 @@ end
 zrates = zeros(length(t0), length(offsets)-1);
 zrates = -log(DF)./delta_rates;
 
-plot(dates())
+
+plot(dates(698,2:end),zrates(698,:))
+
+%% Point 2
+% import quarterly future volumes 
+
+dates_front=Volumesextrafutures;
+Dates_March=dates_front(90:2697,:);
+Volumes_March=Volumesextrafutures1;
+Volumes_March(isnan(Volumes_March))=0;
+Volumes_March=Volumes_March(90:2697,:);
+volumes_front_March=[];
+Dates_March=datetime(Dates_March);
+dates_start=datetime(Dates_March(1));
+dates_end=datetime(Dates_March(262));
+values=[];
+for ii=1:10
+    j1=find(Dates_March>=dates_start,1);
+    j2=find(Dates_March>=dates_end,1);
+    values=Volumes_March(j1:j2-1,ii+1);
+    volumes_front_March=[volumes_front_March;values];
+    dates_start=dates_start+calyears(1);
+    dates_end=dates_end+calyears(1);
+    values=[];
+end
+
+boxplot(log10(volumes_front_March))
+% % 
+Dates_June=dates_front(156:2764,:);
+Volumes_June=VolumesextrafuturesS1;
+Volumes_June(isnan(Volumes_June))=0;
+Volumes_June=Volumes_June(156:2764,:);
+volumes_front_June=[];
+Dates_March=datetime(June);
+dates_start=datetime(Dates_June(1));
+% dates_end=datetime(Dates_March(262));
+% values=[];
+% for ii=1:10
+%     j1=find(Dates_March>=dates_start,1);
+%     j2=find(Dates_March>=dates_end,1);
+%     values=Volumes_March(j1:j2-1,ii+1);
+%     volumes_front_March=[volumes_front_March;values];
+%     dates_start=dates_start+calyears(1);
+%     dates_end=dates_end+calyears(1);
+%     values=[];
+% end
+% 
+% boxplot(log10(volumes_front_March))
+
+% % 
+
+
+
 

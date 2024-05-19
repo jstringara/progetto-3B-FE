@@ -100,13 +100,61 @@ end
 zrates = zeros(length(t0), length(offsets)-1);
 zrates = -log(DF)./delta_rates;
 
-find(zrates(698,:)>0.01,1)
 
 plot(dates(698,2:end),zrates(698,:))
 
 %% Point 2
 % import quarterly future volumes 
+load('dates_front.mat')
+load('Volumes_March.mat')
+dates_March=dates_front(90:2697);
+Volumes_March(isnan(Volumes_March))=0;
+Volumes_March=Volumes_March(90:2697,:);
+volumes_front_March=[];
+dates_March=datetime(dates_March);
+dates_start=datetime(dates_March(1));
+dates_end=datetime(dates_March(262));
+values=[];
+for ii=1:10
+    j1=find(dates_March>=dates_start,1);
+    j2=find(dates_March>=dates_end,1);
+    values=Volumes_March(j1:j2-1,ii+1);
+    volumes_front_March=[volumes_front_March;values];
+    dates_start=dates_start+calyears(1);
+    dates_end=dates_end+calyears(1);
+    values=[];
+end
+figure(1)
+boxplot(log10(volumes_front_March))
 
-Futures_March = 
+%%
+load('Volumes_June.mat')
+Dates_June=dates_front(156:2764);
+Volumes_June=VolumesextrafuturesS1;
+Volumes_June(isnan(Volumes_June))=0;
+Volumes_June=Volumes_June(156:2764,:);
+volumes_front_June=[];
+inputFormat = 'dd-MMM-yyyy'; % Formato con giorno, mese abbreviato e anno
+locale = 'it_IT'; % Lingua locale italiana
+% Converti le stringhe di data in datetime
+Dates_June = datetime(Dates_June, 'InputFormat', inputFormat, 'Locale', locale);
+dates_start=datetime(Dates_June(1));
+dates_end=datetime('31-May-2013');
+values=[];
+for ii=1:10
+    j1=find(Dates_June>=dates_start,1);
+    j2=find(Dates_June>=dates_end,1);
+    values=Volumes_June(j1:j2-1,ii+1);
+    volumes_front_June=[volumes_front_June;values];
+    dates_start=dates_start+calyears(1);
+    dates_end=dates_end+calyears(1);
+    values=[];
+end
+figure(2)
+boxplot(log10(volumes_front_June))
+
+%% 
+
+
 
 
