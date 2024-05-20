@@ -41,7 +41,7 @@ def preprocess_Volumes(month:str, save:bool = True)->pd.DataFrame:
         # find the last quoted date as the last date where there is a value in the column
         last_date = extra_futures_march.loc[extra_futures_march[col_name].notnull(), 'Date'].max()
         # bring it back a month
-        last_date = last_date - pd.DateOffset(months=1)
+        # last_date = last_date - pd.DateOffset(months=1)
         # select the needed data
         selected_data = extra_futures_march.loc[extra_futures_march['Date'] > prev_date].loc[
             extra_futures_march['Date'] <= last_date, ['Date', col_name]]
