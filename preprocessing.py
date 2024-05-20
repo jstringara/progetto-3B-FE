@@ -2,7 +2,7 @@ import os
 import datetime
 import pandas as pd
 
-def preprocess_Volumes(month:str, save:bool = True)->pd.DataFrame:
+def preprocess_Volumes_front_Month(month:str, save:bool = True)->pd.DataFrame:
     """
     Function to preprocess the data of the volumes of the futures contracts in a given month.
     Month can be either 'March', 'June', 'September'.
@@ -83,24 +83,16 @@ def preprocess_Volumes_Dec(years_offset:int = 0, save:bool = True)->pd.DataFrame
     prev_date = datetime.datetime(2013, 1, 1) # only dates after this date will be considered
 
     for year in range(2013, 2022):
+
         # find the corresponding file
-        file_name = f'ICE_FUT_{str(year)[-2:]}.csv'
-        # open the corresponding file (read the Dates as dates and the VOLUME as float)
-        future_volumes_front = pd.read_csv(os.path.join(data_dir, futures_dir, file_name),
-            usecols=['Date', 'OPEN', 'CLOSE', 'VOLUME'], parse_dates=['Date'])
-        # find the last quoted date as the last date where there is a value in the column
-        last_date = future_volumes_front.loc[future_volumes_front['VOLUME'].notnull(), 'Date'].max()
+        file_name = f'ICE_FUT_{str(year + years_offset)[-2:]}.csv'
+        # compute the expiry date (penultimate Monday of December)
+        expiry_date = pd.to_datetime(f'{year}-12-01') + pd.DateOffset(months=1, weeks=-2, weekday=0)
         # bring it back a month
-        # last_date = last_date - pd.DateOffset(months=1)
-        # if there is an offset, get the date 
-        if years_offset > 0:
-            # find the file from which to get the data
-            file_name = f'ICE_FUT_{str(year + years_offset)[-2:]}.csv'
-            # open the corresponding file (read the Dates as dates and the VOLUME as float)
-            future_volumes = pd.read_csv(os.path.join(data_dir, futures_dir, file_name),
-                usecols=['Date', 'OPEN', 'CLOSE', 'VOLUME'], parse_dates=['Date'])
-        else :
-            future_volumes = future_volumes_front
+        last_date = expiry_date - pd.DateOffset(months=1)
+        # open the corresponding file (read the Dates as dates and the VOLUME as float)
+        future_volumes = pd.read_csv(os.path.join(data_dir, futures_dir, file_name),
+            usecols=['Date', 'OPEN', 'CLOSE', 'VOLUME'], parse_dates=['Date'])
         # select the needed data
         selected_data = future_volumes.loc[future_volumes['Date'] > prev_date].loc[
             future_volumes['Date'] <= last_date, ['Date', 'VOLUME', 'OPEN', 'CLOSE']]
@@ -113,17 +105,16 @@ def preprocess_Volumes_Dec(years_offset:int = 0, save:bool = True)->pd.DataFrame
                 'Close': selected_data['CLOSE']
             }
         )
-        # fill the NaN value of the open with the corresponding close
+        # fill the NaN value of the open with the corresponding close and take the average
         selected_data['Open'] = selected_data['Open'].fillna(selected_data['Close'])
-        # take the average of the open and close
         selected_data['Price'] = (selected_data['Open'] + selected_data['Close']) / 2
         # fill the NaN values of the volume with 0
         selected_data['Volume'] = selected_data['Volume'].fillna(0)
         # drop the open and close columns
         selected_data = selected_data.drop(columns=['Open', 'Close'])
         # add the expiry date to the DataFrame
-        selected_data['Expiry'] = last_date
-        # find the dates between the last date and the previous date
+        selected_data['Expiry'] = expiry_date
+        # add the date to the DataFrame
         Volumes_Dec = pd.concat([Volumes_Dec, selected_data])
         # update the previous date
         prev_date = last_date
@@ -137,7 +128,9 @@ def preprocess_Volumes_Dec(years_offset:int = 0, save:bool = True)->pd.DataFrame
 
     # save the DataFrame to a csv file without the index
     if save:
-        Volumes_Dec.to_csv(os.path.join(output_dir, f'Volumes_December_{years_offset}.csv'), index=False)
+        Volumes_Dec.to_csv(
+            os.path.join(output_dir, f'Volumes_December_{years_offset}.csv'),
+            index=False)
 
     return Volumes_Dec
 
@@ -160,29 +153,28 @@ def preprocess_daily_price(front_dates:pd.Series, save:bool = True)->pd.DataFram
 
     # keep only the dates that are also in the Volumes_dec_front
     daily_price = daily_price.loc[daily_price['Date'].isin(front_dates)]
-    # fill the open with the close
+    # fill the open with the close and take the average
     daily_price['OPEN'] = daily_price['OPEN'].fillna(daily_price['CLOSE'])
-    # take the average of the open and close
     daily_price['Price'] = (daily_price['OPEN'] + daily_price['CLOSE']) / 2
     # drop the open and close columns
     daily_price = daily_price.drop(columns=['OPEN', 'CLOSE'])
 
     # save the DataFrame to a csv file without the index
     if save:
-        daily_price.to_csv(os.path.join(output_dir, 'Daily_Future_Price.csv'), index=False)
+        daily_price.to_csv(
+            os.path.join(output_dir, 'Daily_Future_Price.csv'),
+            index=False)
     
     return daily_price
 
 if __name__ == '__main__':
     # preprocess the volumes of the futures contracts
-    preprocess_Volumes('March')
-    preprocess_Volumes('June')
-    preprocess_Volumes('September')
+    preprocess_Volumes_front_Month('March')
+    preprocess_Volumes_front_Month('June')
+    preprocess_Volumes_front_Month('September')
     # preprocess the volumes of the futures contracts in December (front, next and second next)
     front_december = preprocess_Volumes_Dec()
     preprocess_Volumes_Dec(years_offset=1)
     preprocess_Volumes_Dec(years_offset=2)
     # preprocess the daily price of the futures contracts
     preprocess_daily_price(front_december['Date'])
-
-
