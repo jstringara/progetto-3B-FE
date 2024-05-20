@@ -121,32 +121,68 @@ def preprocess_Volumes_Dec(years_offset:int = 0, save:bool = True)->pd.DataFrame
         selected_data['Volume'] = selected_data['Volume'].fillna(0)
         # drop the open and close columns
         selected_data = selected_data.drop(columns=['Open', 'Close'])
+        # add the expiry date to the DataFrame
+        selected_data['Expiry'] = last_date
         # find the dates between the last date and the previous date
         Volumes_Dec = pd.concat([Volumes_Dec, selected_data])
         # update the previous date
         prev_date = last_date
+    
+    # finally, keep only the dates that also have an associated daily price
+    daily_dates = pd.read_csv(os.path.join(data_dir, 'Daily_Future.csv'),
+        usecols=['Date'], parse_dates=['Date'])
+    daily_dates = daily_dates.loc[daily_dates['Date'].isin(Volumes_Dec['Date'])]
+    # filter the Volumes_Dec DataFrame
+    Volumes_Dec = Volumes_Dec.loc[Volumes_Dec['Date'].isin(daily_dates['Date'])]
 
     # save the DataFrame to a csv file without the index
     if save:
         Volumes_Dec.to_csv(os.path.join(output_dir, f'Volumes_December_{years_offset}.csv'), index=False)
 
-# if __name__ == '__main__':
-preprocess_Volumes('March', save=True)
-preprocess_Volumes('June', save=True)
-preprocess_Volumes('September', save=True)
-Volumes_dec_front = preprocess_Volumes_Dec(save=True)
-preprocess_Volumes_Dec(years_offset=1, save=True)
-preprocess_Volumes_Dec(years_offset=2, save=True)
+    return Volumes_Dec
 
-# # load the data for the daily futures
-# data_dir = 'Data/'
-# futures_dir = 'Futures/'
-# output_dir = 'Preprocessed/'
+def preprocess_daily_price(front_dates:pd.Series, save:bool = True)->pd.DataFrame:
+    """
+    Preprocess the daily price of the futures contracts.
+    Input:
+    - front_dates: Series with the dates of the front futures contracts.
+    - save: boolean indicating whether to save the output to a csv file or not.
+    Output:
+    - DataFrame with the columns 'Date' and 'Price'.
+    """
 
-# # initialize the DataFrame
-# Volumes_daily = pd.DataFrame()
+    # load the data for the daily futures
+    data_dir = 'Data/'
+    output_dir = 'Preprocessed/'
 
-# daily_price = pd.read_csv(os.path.join(data_dir, 'Daily_Future.csv'),
-#     parse_dates=['Date'])
+    daily_price = pd.read_csv(os.path.join(data_dir, 'Daily_Future.csv'),
+        usecols=['Date', 'OPEN', 'CLOSE'], parse_dates=['Date'])
 
-# # find only the dates
+    # keep only the dates that are also in the Volumes_dec_front
+    daily_price = daily_price.loc[daily_price['Date'].isin(front_dates)]
+    # fill the open with the close
+    daily_price['OPEN'] = daily_price['OPEN'].fillna(daily_price['CLOSE'])
+    # take the average of the open and close
+    daily_price['Price'] = (daily_price['OPEN'] + daily_price['CLOSE']) / 2
+    # drop the open and close columns
+    daily_price = daily_price.drop(columns=['OPEN', 'CLOSE'])
+
+    # save the DataFrame to a csv file without the index
+    if save:
+        daily_price.to_csv(os.path.join(output_dir, 'Daily_Future_Price.csv'), index=False)
+    
+    return daily_price
+
+if __name__ == '__main__':
+    # preprocess the volumes of the futures contracts
+    preprocess_Volumes('March')
+    preprocess_Volumes('June')
+    preprocess_Volumes('September')
+    # preprocess the volumes of the futures contracts in December (front, next and second next)
+    front_december = preprocess_Volumes_Dec()
+    preprocess_Volumes_Dec(years_offset=1)
+    preprocess_Volumes_Dec(years_offset=2)
+    # preprocess the daily price of the futures contracts
+    preprocess_daily_price(front_december['Date'])
+
+
