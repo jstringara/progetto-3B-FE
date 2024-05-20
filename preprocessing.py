@@ -6,7 +6,11 @@ def preprocess_Volumes(month:str, save:bool = True)->pd.DataFrame:
     """
     Function to preprocess the data of the volumes of the futures contracts in a given month.
     Month can be either 'March', 'June', 'September'.
-    Output is a DataFrame with the columns 'Date' and 'Volume'.
+    Input:
+    - month: string with the name of the month (either 'March', 'June' or 'September')
+    - save: boolean indicating whether to save the output to a csv file or not.
+    Output:
+    - DataFrame with the columns 'Date' and 'Volume'.
     """
     # check that the month is one of the three possible months
     if month.capitalize() not in ['March', 'June', 'September']:
@@ -59,10 +63,14 @@ def preprocess_Volumes(month:str, save:bool = True)->pd.DataFrame:
 
     return Volumes_march
 
-def preprocess_Volumes_Dec(save:bool = True)->pd.DataFrame:
+def preprocess_Volumes_Dec(years_offset:int = 0, save:bool = True)->pd.DataFrame:
     """
     Function to preprocess the data of the volumes of the futures contracts in December.
-    Output is a DataFrame with the columns 'Date' and 'Volume'.
+    Input:
+    - years_offset: integer with the number of years to go back from the current year.
+    - save: boolean indicating whether to save the output to a csv file or not.
+    Output:
+    - DataFrame with the columns 'Date' and 'Volume'.
     """
 
     # directory of the data
@@ -78,12 +86,21 @@ def preprocess_Volumes_Dec(save:bool = True)->pd.DataFrame:
         # find the corresponding file
         file_name = f'ICE_FUT_{str(year)[-2:]}.csv'
         # open the corresponding file (read the Dates as dates and the VOLUME as float)
-        future_volumes = pd.read_csv(os.path.join(data_dir, futures_dir, file_name),
+        future_volumes_front = pd.read_csv(os.path.join(data_dir, futures_dir, file_name),
             usecols=['Date', 'VOLUME'], parse_dates=['Date'], dtype={'VOLUME': float})
         # find the last quoted date as the last date where there is a value in the column
-        last_date = future_volumes.loc[future_volumes['VOLUME'].notnull(), 'Date'].max()
+        last_date = future_volumes_front.loc[future_volumes_front['VOLUME'].notnull(), 'Date'].max()
         # bring it back a month
         # last_date = last_date - pd.DateOffset(months=1)
+        # if there is an offset, get the date 
+        if years_offset > 0:
+            # find the file from which to get the data
+            file_name = f'ICE_FUT_{str(year + years_offset)[-2:]}.csv'
+            # open the corresponding file (read the Dates as dates and the VOLUME as float)
+            future_volumes = pd.read_csv(os.path.join(data_dir, futures_dir, file_name),
+                usecols=['Date', 'VOLUME'], parse_dates=['Date'], dtype={'VOLUME': float})
+        else :
+            future_volumes = future_volumes_front
         # select the needed data
         selected_data = future_volumes.loc[future_volumes['Date'] > prev_date].loc[
             future_volumes['Date'] <= last_date, ['Date', 'VOLUME']]
@@ -99,10 +116,12 @@ def preprocess_Volumes_Dec(save:bool = True)->pd.DataFrame:
 
     # save the DataFrame to a csv file without the index
     if save:
-        Volumes_Dec.to_csv(os.path.join(output_dir, 'Volumes_December.csv'), index=False)
+        Volumes_Dec.to_csv(os.path.join(output_dir, f'Volumes_December_{years_offset}.csv'), index=False)
 
 if __name__ == '__main__':
     preprocess_Volumes('March', save=True)
     preprocess_Volumes('June', save=True)
     preprocess_Volumes('September', save=True)
     preprocess_Volumes_Dec(save=True)
+    preprocess_Volumes_Dec(years_offset=1, save=True)
+    preprocess_Volumes_Dec(years_offset=2, save=True)
