@@ -87,7 +87,7 @@ def preprocess_Volumes_Dec(years_offset:int = 0, save:bool = True)->pd.DataFrame
         file_name = f'ICE_FUT_{str(year)[-2:]}.csv'
         # open the corresponding file (read the Dates as dates and the VOLUME as float)
         future_volumes_front = pd.read_csv(os.path.join(data_dir, futures_dir, file_name),
-            usecols=['Date', 'VOLUME'], parse_dates=['Date'], dtype={'VOLUME': float})
+            usecols=['Date', 'OPEN', 'CLOSE', 'VOLUME'], parse_dates=['Date'])
         # find the last quoted date as the last date where there is a value in the column
         last_date = future_volumes_front.loc[future_volumes_front['VOLUME'].notnull(), 'Date'].max()
         # bring it back a month
@@ -98,17 +98,29 @@ def preprocess_Volumes_Dec(years_offset:int = 0, save:bool = True)->pd.DataFrame
             file_name = f'ICE_FUT_{str(year + years_offset)[-2:]}.csv'
             # open the corresponding file (read the Dates as dates and the VOLUME as float)
             future_volumes = pd.read_csv(os.path.join(data_dir, futures_dir, file_name),
-                usecols=['Date', 'VOLUME'], parse_dates=['Date'], dtype={'VOLUME': float})
+                usecols=['Date', 'OPEN', 'CLOSE', 'VOLUME'], parse_dates=['Date'])
         else :
             future_volumes = future_volumes_front
         # select the needed data
         selected_data = future_volumes.loc[future_volumes['Date'] > prev_date].loc[
-            future_volumes['Date'] <= last_date, ['Date', 'VOLUME']]
+            future_volumes['Date'] <= last_date, ['Date', 'VOLUME', 'OPEN', 'CLOSE']]
         # select only the date and the volume
-        selected_data = selected_data[['Date', 'VOLUME']]
-        selected_data.columns = ['Date', 'Volume']
-        # fill the NaN values with 0
+        selected_data = pd.DataFrame(
+            {
+                'Date': selected_data['Date'],
+                'Volume': selected_data['VOLUME'], 
+                'Open': selected_data['OPEN'],
+                'Close': selected_data['CLOSE']
+            }
+        )
+        # fill the NaN value of the open with the corresponding close
+        selected_data['Open'] = selected_data['Open'].fillna(selected_data['Close'])
+        # take the average of the open and close
+        selected_data['Price'] = (selected_data['Open'] + selected_data['Close']) / 2
+        # fill the NaN values of the volume with 0
         selected_data['Volume'] = selected_data['Volume'].fillna(0)
+        # drop the open and close columns
+        selected_data = selected_data.drop(columns=['Open', 'Close'])
         # find the dates between the last date and the previous date
         Volumes_Dec = pd.concat([Volumes_Dec, selected_data])
         # update the previous date
@@ -118,10 +130,23 @@ def preprocess_Volumes_Dec(years_offset:int = 0, save:bool = True)->pd.DataFrame
     if save:
         Volumes_Dec.to_csv(os.path.join(output_dir, f'Volumes_December_{years_offset}.csv'), index=False)
 
-if __name__ == '__main__':
-    preprocess_Volumes('March', save=True)
-    preprocess_Volumes('June', save=True)
-    preprocess_Volumes('September', save=True)
-    preprocess_Volumes_Dec(save=True)
-    preprocess_Volumes_Dec(years_offset=1, save=True)
-    preprocess_Volumes_Dec(years_offset=2, save=True)
+# if __name__ == '__main__':
+preprocess_Volumes('March', save=True)
+preprocess_Volumes('June', save=True)
+preprocess_Volumes('September', save=True)
+Volumes_dec_front = preprocess_Volumes_Dec(save=True)
+preprocess_Volumes_Dec(years_offset=1, save=True)
+preprocess_Volumes_Dec(years_offset=2, save=True)
+
+# # load the data for the daily futures
+# data_dir = 'Data/'
+# futures_dir = 'Futures/'
+# output_dir = 'Preprocessed/'
+
+# # initialize the DataFrame
+# Volumes_daily = pd.DataFrame()
+
+# daily_price = pd.read_csv(os.path.join(data_dir, 'Daily_Future.csv'),
+#     parse_dates=['Date'])
+
+# # find only the dates
