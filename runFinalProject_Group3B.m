@@ -17,6 +17,7 @@ rng(42) % the answer to everything in the universe
 %% Add the directories to the path
 
 addpath('Data');
+addpath('Preprocessed')
 addpath('Bootstrap');
 
 %% Point 1) Bootstrap the interest rates curve for each date
@@ -41,82 +42,52 @@ OIS_Data{:,2:end} = OIS_Data{:,2:end} / 100;
 
 plot(dates(698,2:end), zrates(698,:))
 
-%% Point 2
-% import quarterly future volumes 
-load('dates_front.mat')
-load('Volumes_March.mat')
-dates_front = Volumesextrafutures;
-dates_March=dates_front(90:2697);
-Volumes_March = Volumesextrafutures1;
-Volumes_March(isnan(Volumes_March))=0;
-Volumes_March=Volumes_March(90:2697,:);
-volumes_front_March=[];
-dates_March=datetime(dates_March);
-dates_start=datetime(dates_March(1));
-dates_end=datetime(dates_March(262));
-values=[];
-for ii=1:10
-    j1=find(dates_March>=dates_start,1);
-    j2=find(dates_March>=dates_end,1);
-    values=Volumes_March(j1:j2-1,ii+1);
-    volumes_front_March=[volumes_front_March;values];
-    dates_start=dates_start+calyears(1);
-    dates_end=dates_end+calyears(1);
-    values=[];
-end
-figure(1)
-boxplot(log10(volumes_front_March))
+%% Point 2) Verify that the front December EUA future is the most liquid one in terms of volume
 
-%%
-load('Volumes_June.mat')
-Dates_June=dates_front(156:2764);
-Volumes_June=VolumesextrafuturesS1;
-Volumes_June(isnan(Volumes_June))=0;
-Volumes_June=Volumes_June(156:2764,:);
-volumes_front_June=[];
-inputFormat = 'dd-MMM-yyyy'; % Formato con giorno, mese abbreviato e anno
-locale = 'it_IT'; % Lingua locale italiana
-% Converti le stringhe di data in datetime
-Dates_June = datetime(Dates_June, 'InputFormat', inputFormat, 'Locale', locale);
-dates_start=datetime(Dates_June(1));
-dates_end=datetime('31-May-2013');
-values=[];
-for ii=1:10
-    j1=find(Dates_June>=dates_start,1);
-    j2=find(Dates_June>=dates_end,1);
-    values=Volumes_June(j1:j2-1,ii+1);
-    volumes_front_June=[volumes_front_June;values];
-    dates_start=dates_start+calyears(1);
-    dates_end=dates_end+calyears(1);
-    values=[];
-end
-figure(2)
-boxplot(log10(volumes_front_June+1))
+% load the preprocessed data
+Volumes_march_front = readtable('Volumes_March.csv');
+Volumes_june_front = readtable('Volumes_June.csv');
+Volumes_sept_front = readtable('Volumes_September.csv');
+Volumes_dec_front = readtable('Volumes_December_0.csv');
 
-%% 
-load('Volumes_Sept.mat')
-Dates_Sept=dates_front(222:2852);
-Volumes_Sept=volumes_data_sept;
-Volumes_Sept(isnan(Volumes_Sept))=0;
-Volumes_Sept=Volumes_Sept(222:2852,:);
-volumes_front_Sept=[];
-inputFormat = 'dd-MMM-yyyy'; % Formato con giorno, mese abbreviato e anno
-locale = 'it_IT'; % Lingua locale italiana
-% Converti le stringhe di data in datetime
-Dates_Sept = datetime(Dates_Sept, 'InputFormat', inputFormat, 'Locale', locale);
-dates_start=datetime(Dates_Sept(1));
-dates_end=datetime('30-Aug-2013');
-values=[];
-for ii=1:10
-    j1=find(Dates_Sept>=dates_start,1);
-    j2=find(Dates_Sept>=dates_end,1);
-    values=Volumes_Sept(j1:j2-1,ii+1);
-    volumes_front_Sept=[volumes_front_Sept;values];
-    dates_start=dates_start+calyears(1);
-    dates_end=dates_end+calyears(1);
-    values=[];
-end
-figure(3)
-boxplot(log10(volumes_front_Sept+1))
+Volumes_fronts_months = [
+    Volumes_march_front;
+    Volumes_june_front;
+    Volumes_sept_front;
+    Volumes_dec_front
+];
 
+grouping = [
+    zeros(height(Volumes_march_front),1);
+    ones(height(Volumes_june_front),1);
+    2*ones(height(Volumes_sept_front),1);
+    3*ones(height(Volumes_dec_front),1)];
 
+figure;
+boxplot(log10(Volumes_fronts_months.Volume+1), ...
+    grouping, ...
+    'Labels', {'March', 'June', 'September', 'December'})
+% set the title and grid
+title('Volume of EUA Futures')
+grid on
+
+% boxplot of the December front and next
+
+% load the preprocessed data
+Volumes_dec_1 = readtable('Volumes_December_1.csv');
+Volumes_dec_2 = readtable('Volumes_December_2.csv');
+
+Volumes_dec = [Volumes_dec_front; Volumes_dec_1; Volumes_dec_2];
+
+grouping = [
+    zeros(height(Volumes_dec_front),1);
+    ones(height(Volumes_dec_1),1);
+    2*ones(height(Volumes_dec_2),1)];
+
+figure;
+boxplot(log10(Volumes_dec.Volume+1), ...
+    grouping, ...
+    'Labels', {'Front December', 'Next December', 'Second next December'})
+% set the title and grid
+title('Volume of EUA Futures for December')
+grid on
