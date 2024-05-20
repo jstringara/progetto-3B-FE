@@ -59,7 +59,50 @@ def preprocess_Volumes(month:str, save:bool = True)->pd.DataFrame:
 
     return Volumes_march
 
+def preprocess_Volumes_Dec(save:bool = True)->pd.DataFrame:
+    """
+    Function to preprocess the data of the volumes of the futures contracts in December.
+    Output is a DataFrame with the columns 'Date' and 'Volume'.
+    """
+
+    # directory of the data
+    data_dir = 'Data/'
+    futures_dir = 'Futures/'
+    output_dir = 'Preprocessed/'
+
+    # initialize the DataFrame
+    Volumes_Dec = pd.DataFrame()
+    prev_date = datetime.datetime(2013, 1, 1) # only dates after this date will be considered
+
+    for year in range(2013, 2022):
+        # find the corresponding file
+        file_name = f'ICE_FUT_{str(year)[-2:]}.csv'
+        # open the corresponding file (read the Dates as dates and the VOLUME as float)
+        future_volumes = pd.read_csv(os.path.join(data_dir, futures_dir, file_name),
+            usecols=['Date', 'VOLUME'], parse_dates=['Date'], dtype={'VOLUME': float})
+        # find the last quoted date as the last date where there is a value in the column
+        last_date = future_volumes.loc[future_volumes['VOLUME'].notnull(), 'Date'].max()
+        # bring it back a month
+        # last_date = last_date - pd.DateOffset(months=1)
+        # select the needed data
+        selected_data = future_volumes.loc[future_volumes['Date'] > prev_date].loc[
+            future_volumes['Date'] <= last_date, ['Date', 'VOLUME']]
+        # select only the date and the volume
+        selected_data = selected_data[['Date', 'VOLUME']]
+        selected_data.columns = ['Date', 'Volume']
+        # fill the NaN values with 0
+        selected_data['Volume'] = selected_data['Volume'].fillna(0)
+        # find the dates between the last date and the previous date
+        Volumes_Dec = pd.concat([Volumes_Dec, selected_data])
+        # update the previous date
+        prev_date = last_date
+
+    # save the DataFrame to a csv file without the index
+    if save:
+        Volumes_Dec.to_csv(os.path.join(output_dir, 'Volumes_December.csv'), index=False)
+
 if __name__ == '__main__':
     preprocess_Volumes('March', save=True)
     preprocess_Volumes('June', save=True)
     preprocess_Volumes('September', save=True)
+    preprocess_Volumes_Dec(save=True)
