@@ -19,6 +19,7 @@ rng(42) % the answer to everything in the universe
 addpath('Data');
 addpath('Preprocessed')
 addpath('Bootstrap');
+addpath('Plot');
 
 %% Point 1) Bootstrap the interest rates curve for each date
 
@@ -31,8 +32,8 @@ OIS_Data.Date = OIS_Data.Date + calyears(2000);
 OIS_Data = fillmissing(OIS_Data, 'previous');
 OIS_Data = rmmissing(OIS_Data);
 
-% remove duplicate
-OIS_Data = unique(OIS_Data,'rows');
+% remove duplicate based on the date
+OIS_Data = unique(OIS_Data);
 
 % Put the rates into percentages
 OIS_Data{:,2:end} = OIS_Data{:,2:end} / 100;
@@ -62,7 +63,7 @@ grouping = [
     3*ones(height(Volumes_dec_front),1)
 ];
 
-plot_Volumes_fronts_months(Volumes_fronts_months, grouping)
+% plot_Volumes_fronts_months(Volumes_fronts_months, grouping)
 
 % boxplot of the December front and next
 
@@ -78,26 +79,34 @@ grouping = [
     2*ones(height(Volumes_dec_2),1)
 ];
 
-plot_Volumes_december(Volumes_dec, grouping)
+% plot_Volumes_december(Volumes_dec, grouping)
 
 %% Point 3) compute the C-Spread for the EUA futures
 
 % load the preprocessed data of the daily prices
 Daily_prices = readtable('Daily_Future_Price.csv');
 
+% % for each date in dates count the number of occurences
+% for i=1:height(dates)
+%     count = sum(dates(:,1) == dates(i,1));
+%     if count > 1
+%         disp(['Duplicate date: ', datestr(dates(i,1))] )
+%     end
+% end
+
 % find the dates common to the daily prices and the dates for which we have
 % the interest rates
 common_dates = intersect(Daily_prices.Date, dates(:,1));
 
-% find the indices of the common dates
+% find the indices of the common dates in both tables
 idx_daily_prices = ismember(Daily_prices.Date, common_dates);
 idx_dates = ismember(dates(:,1), common_dates);
 
-% filter the daily prices for the common dates
+% filter the daily prices for the common dates (they are the same for the front)
 Daily_prices = Daily_prices(idx_daily_prices,:);
 Front = Volumes_dec_front(idx_daily_prices,:);
 
-% filter the interest rates curves for the common dates
+% filter the interest rates curves for the common dates (same for zero rates)
 DF_common = DF(idx_dates,:);
 zero_rates_common = zrates(idx_dates,:);
 zero_rates_dates_common = dates(idx_dates,2:end);
