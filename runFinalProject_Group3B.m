@@ -86,14 +86,6 @@ grouping = [
 % load the preprocessed data of the daily prices
 Daily_prices = readtable('Daily_Future_Price.csv');
 
-% % for each date in dates count the number of occurences
-% for i=1:height(dates)
-%     count = sum(dates(:,1) == dates(i,1));
-%     if count > 1
-%         disp(['Duplicate date: ', datestr(dates(i,1))] )
-%     end
-% end
-
 % find the dates common to the daily prices and the dates for which we have
 % the interest rates
 common_dates = intersect(Daily_prices.Date, dates(:,1));

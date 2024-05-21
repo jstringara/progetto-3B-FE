@@ -26,8 +26,10 @@ for i = 1:length(dates)
 end
 
 % move to business days
-dates(~isbusday(dates(:,2:end),eurCalendar())) = ...
-    busdate(dates(~isbusday(dates(:,2:end), eurCalendar())), 'modifiedfollow', eurCalendar());
+quoted_dates = dates(:,2:end);
+quoted_dates(~isbusday(quoted_dates, eurCalendar())) = ...
+    busdate(quoted_dates(~isbusday(quoted_dates, eurCalendar())), 'modifiedfollow', eurCalendar());
+dates(:,2:end) = quoted_dates;
 
 % compute the yearfractions (European 30/360 convention)
 yf = zeros(length(t0), length(offsets)-1);
