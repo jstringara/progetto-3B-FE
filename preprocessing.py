@@ -172,6 +172,9 @@ class Bond:
 
     # class attribute to keep track of the number of bonds that were not found
     __unfound_info = []
+    # class attribute (we only want data for Phase III)
+    __start_date = datetime.datetime(2013, 1, 1)
+    __end_date = datetime.datetime(2021, 12, 31)
 
     def __init__(self, code, coupon_rate, maturity_date, coupon_frequency, issuer_ticker, parent_ticker):
         """
@@ -194,6 +197,16 @@ class Bond:
         self.__parent_ticker = parent_ticker
         # load the data for the bond
         self.__data = self.load_data()
+        # find the first quoted date
+        self.__first_quote = self.find_first_quote()
+        # compute the coupon 
+    
+    @classmethod
+    def get_unfound_info(cls):
+        """
+        Return the list of bonds that were not found.
+        """
+        return cls.__unfound_info
     
     def __repr__(self):
         """
@@ -202,12 +215,15 @@ class Bond:
         # create a table with the information of the bond
         return f"""
  --- Bond {self.__code} ---
- Coupon rate: {self.__coupon_rate}
+ Coupon rate: {self.__coupon_rate}%
  Maturity date: {self.__maturity_date}
  Coupon frequency: {self.__coupon_frequency} 
  Issuer ticker: {self.__issuer_ticker}   
  Parent ticker: {self.__parent_ticker}
- -------------------"""
+ First quote: {self.__first_quote if self.__first_quote is not None else 'Not found'}
+ Status: {'Found' if not self.__data.empty else 'Not found'}
+ -------------------
+ """
 
     
     def load_data(self)->pd.DataFrame:
@@ -219,19 +235,39 @@ class Bond:
         bonds_dir = 'Bonds/'
 
         parent_data = pd.read_csv(os.path.join(data_dir, bonds_dir, f'{self.__parent_ticker}.csv'),
-            parse_dates=['Date'])
+            parse_dates=['Date'], dayfirst=False)
         # drop the first and second columns
         parent_data = parent_data.drop(columns=[parent_data.columns[0], parent_data.columns[1]])
 
         # try to extract the data
         out_df = pd.DataFrame()
         try:
-            out_df = parent_data[self.__code]
+            out_df = parent_data[['Date', self.__code]]
+            # select only the dates that are in the range of the bond
+            out_df = out_df.loc[out_df['Date'] >= self.__start_date]
+            out_df = out_df.loc[out_df['Date'] <= self.__end_date]
         except KeyError:
             # add it to the unfound bonds
-            Bond.__unfound_info.append(self)
+            self.__unfound_info.append(self)
         
         return out_df
+
+    def find_first_quote(self)->datetime.date:
+        """
+        Find the first date where the bond was quoted.
+        """
+        # if the data is empty, return None
+        if self.__data.empty:
+            return None
+        # find the first date where the bond was quoted
+        first_quote = self.__data.loc[self.__data[self.__code].notnull(), 'Date'].min()
+        return first_quote
+
+    def show_data(self):
+        """
+        Show the data of the bond.
+        """
+        print(self.__data)
 
 
 # read the bonds from the lis of valid bonds
@@ -241,6 +277,10 @@ bonds = pd.read_csv('Data/Bonds/List_Valid_Bonds.csv', parse_dates=['Maturity Da
 # filter for only the bonds listed in the table
 issuers_to_keep = ['MT', 'ENEI', 'ENGIE', 'LAFARGE', 'HEIG', 'EDF', 'ENI', 'TTEF', 'EONG', 'CEZP', 'VIE']
 bonds = bonds.loc[bonds['Parent Ticker'].isin(issuers_to_keep)]
+# use only bond that have that have a volume higher than 500_000_000
+bonds = bonds.loc[bonds['Original Amount Issued'] >= 500_000_000]
+# use only bonds that are traded in phase III
+bonds = bonds.loc[bonds['Maturity Date'] >= datetime.datetime(2013, 1, 1)]
 
 # create the list of bonds
 bonds_list = {
