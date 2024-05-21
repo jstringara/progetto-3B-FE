@@ -198,8 +198,13 @@ class Bond:
         # load the data for the bond
         self.__data = self.load_data()
         # find the first quoted date
-        self.__first_quote = self.find_first_quote()
+        self.__first_quote = self.__find_first_quote()
         # compute the coupon 
+        self.__coupon_dates = self.__compute_coupon_dates()
+
+        # if no data was found, add it to the list of unfound bonds
+        if self.__data.empty:
+            self.__unfound_info.append(self)
     
     @classmethod
     def get_unfound_info(cls):
@@ -214,17 +219,24 @@ class Bond:
         """
         # create a table with the information of the bond
         return f"""
- --- Bond {self.__code} ---
- Coupon rate: {self.__coupon_rate}%
- Maturity date: {self.__maturity_date}
- Coupon frequency: {self.__coupon_frequency} 
- Issuer ticker: {self.__issuer_ticker}   
- Parent ticker: {self.__parent_ticker}
- First quote: {self.__first_quote if self.__first_quote is not None else 'Not found'}
- Status: {'Found' if not self.__data.empty else 'Not found'}
- -------------------
- """
+  --- Bond {self.__code} ---
+  Coupon rate: {self.__coupon_rate}%
+  Maturity date: {self.__maturity_date.strftime("%Y-%m-%d")}
+  Coupon frequency: {self.__coupon_frequency} 
+  Issuer ticker: {self.__issuer_ticker}   
+  Parent ticker: {self.__parent_ticker}
+  First quote: { self.__first_quote.strftime("%Y-%m-%d") if not pd.isnull(self.__first_quote) else 'Not found'}
+  Status: {'Found' if not self.__data.empty else 'Not found'}
+  Number of coupon payments: {len(self.__coupon_dates)}
+  Coupon dates: {" ".join([date.strftime('%Y-%m-%d') for date in self.__coupon_dates])}
+  -------------------
+  """
 
+    def is_empty(self)->bool:
+        """
+        Check if the data of the bond is empty.
+        """
+        return self.__data.empty
     
     def load_data(self)->pd.DataFrame:
         """
@@ -252,7 +264,7 @@ class Bond:
         
         return out_df
 
-    def find_first_quote(self)->datetime.date:
+    def __find_first_quote(self)->datetime.date:
         """
         Find the first date where the bond was quoted.
         """
@@ -262,6 +274,33 @@ class Bond:
         # find the first date where the bond was quoted
         first_quote = self.__data.loc[self.__data[self.__code].notnull(), 'Date'].min()
         return first_quote
+    
+    def __compute_coupon_dates(self)->list[datetime.date]:
+        """
+        Compute the dates of the coupon payments using the frequency of the coupon and the maturity date.
+        """
+
+        if pd.isnull(self.__first_quote):
+            return []
+
+        # compute the time difference (expressed in months) between the first quote and the maturity date
+        time_diff = self.__maturity_date.to_period('M') - self.__first_quote.to_period('M')
+        time_diff = time_diff.n
+
+        # find the time difference between coupons (in months)
+        coupon_time_diff = 12 // self.__coupon_frequency
+
+        # compute the number of coupons that are paid over the life of the bond
+        num_coupons = time_diff // coupon_time_diff
+
+        # compute the coupon dates
+        coupon_dates = [
+            self.__maturity_date - pd.DateOffset(months=coupon_time_diff * i)
+            for i in reversed(range(num_coupons))
+        ]
+        coupon_dates.sort()
+
+        return coupon_dates
 
     def show_data(self):
         """
@@ -296,6 +335,9 @@ bonds_list = {
 
     for i, row in bonds.iterrows()
 }
+
+# filter the bonds to only keep the ones that were found
+bonds_list = {key: value for key, value in bonds_list.items() if not value.is_empty()}
 
 if __name__ != '__main__':
     # preprocess the volumes of the futures contracts
