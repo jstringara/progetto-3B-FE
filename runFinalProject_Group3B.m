@@ -106,7 +106,6 @@ zero_rates_dates_common = dates(idx_dates,2:end);
 % interpolate the risk free rate for the needed expiry
 risk_free_rate = zeros(height(Daily_prices),1);
 
-ACT_365 = 3;
 for i=1:height(Daily_prices)
     expiry = Front.Expiry(i);
     risk_free_rate(i) = interp1(zero_rates_dates_common(i,:), zero_rates_common(i,:), expiry, 'linear', 'extrap');
@@ -115,7 +114,7 @@ end
 % compute the C-Spread
 ACT_365 = 3;
 yearfrac(common_dates, Front.Expiry, ACT_365)
-C_spread = log(Front.Price ./ Daily_prices.Price) ./ yearfrac(common_dates, Front.Expiry, ACT_365) ...
+C_spread = log(Front.Price ./ Daily_prices.Price) ./ yearfrac(Daily_prices.Date, Front.Expiry, ACT_365) ...
     - risk_free_rate;
 
 % plot the C-Spread
