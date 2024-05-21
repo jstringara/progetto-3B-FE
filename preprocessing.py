@@ -213,7 +213,7 @@ class Bond:
         """
         return cls.__unfound_info
     
-    def __repr__(self):
+    def __repr__(self)->str:
         """
         String representation of the Bond object.
         """
@@ -307,12 +307,11 @@ class Bond:
 
         return coupon_dates
 
-    def show_data(self):
+    def show_data(self)->None:
         """
         Show the data of the bond.
         """
         print(self.__data)
-
 
 # read the bonds from the lis of valid bonds
 bonds = pd.read_csv('Data/Bonds/List_Valid_Bonds.csv', parse_dates=['Maturity Date'],
