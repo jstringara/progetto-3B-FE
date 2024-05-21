@@ -300,6 +300,11 @@ class Bond:
         ]
         coupon_dates.sort()
 
+        # # move to business days if the date is not a business day
+        # for i, date in enumerate(coupon_dates):
+        #     if date.weekday() in [5, 6]:
+        #         coupon_dates[i] = date - pd.DateOffset(weekday=0)
+
         return coupon_dates
 
     def show_data(self):
