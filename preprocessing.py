@@ -170,6 +170,9 @@ def preprocess_daily_price(front_dates:pd.Series, save:bool = True)->pd.DataFram
 # Bond class
 class Bond:
 
+    # class attribute to keep track of the number of bonds that were not found
+    __unfound_info = []
+
     def __init__(self, code, coupon_rate, maturity_date, coupon_frequency, issuer_ticker, parent_ticker):
         """
         Constructor for the Bond class.
@@ -189,12 +192,25 @@ class Bond:
         self.__coupon_frequency = coupon_frequency
         self.__issuer_ticker = issuer_ticker
         self.__parent_ticker = parent_ticker
-        self.__data = None
-
         # load the data for the bond
-        self.load_data()
+        self.__data = self.load_data()
     
-    def load_data(self):
+    def __repr__(self):
+        """
+        String representation of the Bond object.
+        """
+        # create a table with the information of the bond
+        return f"""
+ --- Bond {self.__code} ---
+ Coupon rate: {self.__coupon_rate}
+ Maturity date: {self.__maturity_date}
+ Coupon frequency: {self.__coupon_frequency} 
+ Issuer ticker: {self.__issuer_ticker}   
+ Parent ticker: {self.__parent_ticker}
+ -------------------"""
+
+    
+    def load_data(self)->pd.DataFrame:
         """
         Load the data for the bond from the csv file of the parent company.
         """
@@ -207,32 +223,39 @@ class Bond:
         # drop the first and second columns
         parent_data = parent_data.drop(columns=[parent_data.columns[0], parent_data.columns[1]])
 
-        # keep only the column with the data and the correct code
-        self.__data = parent_data.loc[parent_data[self.__code], ['Date', self.__code]]
+        # try to extract the data
+        out_df = pd.DataFrame()
+        try:
+            out_df = parent_data[self.__code]
+        except KeyError:
+            # add it to the unfound bonds
+            Bond.__unfound_info.append(self)
+        
+        return out_df
 
-        print(self.__data)
 
 # read the bonds from the lis of valid bonds
 bonds = pd.read_csv('Data/Bonds/List_Valid_Bonds.csv', parse_dates=['Maturity Date'],
     usecols= ['Instrument', 'Coupon Rate', 'Maturity Date', 'Original Amount Issued',
         'Coupon Frequency', 'Issuer Ticker', 'Parent Ticker'])
-print(bonds.columns)
 # filter for only the bonds listed in the table
 issuers_to_keep = ['MT', 'ENEI', 'ENGIE', 'LAFARGE', 'HEIG', 'EDF', 'ENI', 'TTEF', 'EONG', 'CEZP', 'VIE']
 bonds = bonds.loc[bonds['Parent Ticker'].isin(issuers_to_keep)]
 
 # create the list of bonds
-bonds_list = []
-for i in range(bonds.shape[0]):
-    bond = Bond(
-        code = bonds.iloc[i, bonds.columns.get_loc('Instrument')],
-        coupon_rate = bonds.iloc[i, bonds.columns.get_loc('Coupon Rate')],
-        maturity_date = bonds.iloc[i, bonds.columns.get_loc('Maturity Date')],
-        coupon_frequency = bonds.iloc[i, bonds.columns.get_loc('Coupon Frequency')],
-        issuer_ticker = bonds.iloc[i, bonds.columns.get_loc('Issuer Ticker')],
-        parent_ticker = bonds.iloc[i, bonds.columns.get_loc('Parent Ticker')]
+bonds_list = {
+
+    row['Instrument'] : Bond(
+        code = row['Instrument'],
+        coupon_rate = row['Coupon Rate'],
+        maturity_date = row['Maturity Date'],
+        coupon_frequency = row['Coupon Frequency'],
+        issuer_ticker = row['Issuer Ticker'],
+        parent_ticker = row['Parent Ticker']
     )
-    bonds_list.append(bond)
+
+    for i, row in bonds.iterrows()
+}
 
 if __name__ != '__main__':
     # preprocess the volumes of the futures contracts
