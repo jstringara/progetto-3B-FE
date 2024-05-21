@@ -41,6 +41,8 @@ OIS_Data{:,2:end} = OIS_Data{:,2:end} / 100;
 % bootstrap the curves
 [dates, DF, zrates] = bootstrapCurves(OIS_Data);
 
+% animated_zrates(zrates, dates)
+
 %% Point 2) Verify that the front December EUA future is the most liquid one in terms of volume
 
 % load the preprocessed data
@@ -63,7 +65,7 @@ grouping = [
     3*ones(height(Volumes_dec_front),1)
 ];
 
-% plot_Volumes_fronts_months(Volumes_fronts_months, grouping)
+plot_Volumes_fronts_months(Volumes_fronts_months, grouping)
 
 % boxplot of the December front and next
 
@@ -79,7 +81,7 @@ grouping = [
     2*ones(height(Volumes_dec_2),1)
 ];
 
-% plot_Volumes_december(Volumes_dec, grouping)
+plot_Volumes_december(Volumes_dec, grouping)
 
 %% Point 3) compute the C-Spread for the EUA futures
 
