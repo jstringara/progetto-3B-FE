@@ -9,6 +9,9 @@ clc
 clear all
 close all
 
+% no warnings
+warning('off', 'all')
+
 tic
 
 % fix random seed
@@ -41,7 +44,7 @@ OIS_Data{:,2:end} = OIS_Data{:,2:end} / 100;
 % bootstrap the curves
 [dates, DF, zrates] = bootstrapCurves(OIS_Data);
 
-% animated_zrates(zrates, dates)
+animated_zrates(zrates, dates)
 
 %% Point 2) Verify that the front December EUA future is the most liquid one in terms of volume
 
@@ -49,56 +52,63 @@ OIS_Data{:,2:end} = OIS_Data{:,2:end} / 100;
 Volumes_march_front = readtable('Volumes_March.csv');
 Volumes_june_front = readtable('Volumes_June.csv');
 Volumes_sept_front = readtable('Volumes_September.csv');
-Volumes_dec_front = readtable('Volumes_December_0.csv');
+Front_December = readtable('Front_December.csv');
 
 Volumes_fronts_months = [
     Volumes_march_front.Volume;
     Volumes_june_front.Volume;
     Volumes_sept_front.Volume;
-    Volumes_dec_front.Volume
+    Front_December.Volume
 ];
 
 grouping = [
     zeros(height(Volumes_march_front),1);
     ones(height(Volumes_june_front),1);
     2*ones(height(Volumes_sept_front),1);
-    3*ones(height(Volumes_dec_front),1)
+    3*ones(height(Front_December),1)
 ];
 
-plot_Volumes_fronts_months(Volumes_fronts_months, grouping)
+% plot_Volumes_fronts_months(Volumes_fronts_months, grouping)
 
 % boxplot of the December front and next
 
 % load the preprocessed data
-Volumes_dec_1 = readtable('Volumes_December_1.csv');
-Volumes_dec_2 = readtable('Volumes_December_2.csv');
+Next_December = readtable('Next_December.csv');
+Next_2_December = readtable('Next_2_December.csv');
 
-Volumes_dec = [Volumes_dec_front.Volume; Volumes_dec_1.Volume; Volumes_dec_2.Volume];
-
-grouping = [
-    zeros(height(Volumes_dec_front),1);
-    ones(height(Volumes_dec_1),1);
-    2*ones(height(Volumes_dec_2),1)
+Volumes_dec = [
+    Front_December.Volume;
+    Next_December.Volume;
+    Next_2_December.Volume
 ];
 
-plot_Volumes_december(Volumes_dec, grouping)
+grouping = [
+    zeros(height(Front_December),1);
+    ones(height(Next_December),1);
+    2*ones(height(Next_2_December),1)
+];
+
+% plot_Volumes_december(Volumes_dec, grouping)
 
 %% Point 3) compute the C-Spread for the EUA futures
 
 % load the preprocessed data of the daily prices
-Daily_prices = readtable('Daily_Future_Price.csv');
+Daily_Future = readtable('Daily_Future.csv');
 
+% TODO: FIX THE DATES AND THE INTERSECTION
+% the date should not be an intersection but rather we should use the previous bootstrap
+% curve for the dates we do not have
 % find the dates common to the daily prices and the dates for which we have
 % the interest rates
-common_dates = intersect(Daily_prices.Date, dates(:,1));
+common_dates = intersect(Daily_Future.Date, dates(:,1));
 
 % find the indices of the common dates in both tables
-idx_daily_prices = ismember(Daily_prices.Date, common_dates);
+idx_daily_prices = ismember(Daily_Future.Date, common_dates);
 idx_dates = ismember(dates(:,1), common_dates);
 
 % filter the daily prices for the common dates (they are the same for the front)
-Daily_prices = Daily_prices(idx_daily_prices,:);
-Front = Volumes_dec_front(idx_daily_prices,:);
+Daily_Future = Daily_Future(idx_daily_prices,:);
+Front_December = Front_December(idx_daily_prices,:);
 
 % filter the interest rates curves for the common dates (same for zero rates)
 DF_common = DF(idx_dates,:);
@@ -106,50 +116,19 @@ zero_rates_common = zrates(idx_dates,:);
 zero_rates_dates_common = dates(idx_dates,2:end);
 
 % interpolate the risk free rate for the needed expiry
-risk_free_rate = zeros(height(Daily_prices),1);
+risk_free_rate = zeros(height(Daily_Future),1);
 
-for i=1:height(Daily_prices)
-    expiry = Front.Expiry(i);
+for i=1:height(Daily_Future)
+    expiry = Front_December.Expiry(i);
     risk_free_rate(i) = interp1(zero_rates_dates_common(i,:), zero_rates_common(i,:), expiry, 'linear', 'extrap');
 end
 
 % compute the C-Spread
 ACT_365 = 3;
-yearfrac(common_dates, Front.Expiry, ACT_365)
-C_spread = log(Front.Price ./ Daily_prices.Price) ./ yearfrac(Daily_prices.Date, Front.Expiry, ACT_365) ...
+C_spread = log(Front_December.Price ./ Daily_Future.Price) ./ ...
+    yearfrac(Daily_Future.Date, Front_December.Expiry, ACT_365) ...
     - risk_free_rate;
 
-% plot the C-Spread
-figure;
-plot(common_dates, 100 * C_spread)
-title('C-Spread')
-grid on
+%% Plot the C-Spread
 
-% plot the price
-figure;
-plot(common_dates, Daily_prices.Price)
-hold on
-plot(common_dates, Front.Price)
-title('Daily Price vs Front Price')
-legend('Daily Price', 'Front Price')
-grid on
-
-% plot the ratio
-figure;
-plot(common_dates, Front.Price ./ Daily_prices.Price)
-title('Ratio')
-grid on
-title('Ratio')
-legend('Front Price / Daily Price')
-
-figure
-plot(common_dates, 100 * log(Front.Price ./ Daily_prices.Price))
-title('Log Spread')
-grid on
-
-% plot the zero rates
-figure;
-plot(common_dates, 100 * risk_free_rate)
-title('Zero Rates')
-grid on
-ylim([-0.6, 3.6])
+plot_C_Z_r(common_dates, C_spread, risk_free_rate)
