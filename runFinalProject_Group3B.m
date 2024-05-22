@@ -174,8 +174,8 @@ for i = 1:length(years)
 end
 
 % compute the Mean and the Standard Deviation of the C-Spread
-mean_C_spread = mean(C_spread.C_Spread, 'omitnan');
-std_C_spread = std(C_spread.C_Spread, 'omitnan');
+mean_C_spread = mean(C_spread.C_Spread);
+std_C_spread = std(C_spread.C_Spread);
 
 % display the results
 disp(['The mean of the C-Spread is: ', num2str(mean_C_spread * 100), '%']);
