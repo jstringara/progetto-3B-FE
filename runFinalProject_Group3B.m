@@ -95,12 +95,6 @@ grouping = [
 % load the preprocessed data of the daily prices
 Daily_Future = readtable('Daily_Future.csv');
 
-% TODO: FIX THE DATES AND THE INTERSECTION
-% the date should not be an intersection but rather we should use the previous bootstrap
-% curve for the dates we do not have
-% find the dates common to the daily prices and the dates for which we have
-% the interest rates
-
 % build the zero rates matrix
 zrates_common = zeros(height(Daily_Future), size(zrates,2));
 dates_common = NaT(height(Daily_Future), size(dates,2));
@@ -190,6 +184,25 @@ disp(['The standard deviation of the C-Spread is: ', num2str(std_C_spread * 100)
 %% Plot the C-Spread
 
 plot_C_Z_r(C_spread, risk_free_rate)
+
+%% Load the data of the Bonds
+
+load('Bonds.mat');
+
+% transform the dates into datetime
+date_format = 'yyyy-MM-dd';
+for i = 1:length(Bonds)
+    Bonds{i}.MaturityDate = datetime(convertCharsToStrings(Bonds{i}.MaturityDate), 'Format', date_format);
+    Bonds{i}.FirstQuote = datetime(convertCharsToStrings(Bonds{i}.FirstQuote), 'Format', date_format);
+    Bonds{i}.CouponDates = datetime(convertCharsToStrings( ...
+        mat2cell(Bonds{i}.CouponDates, ones(size(Bonds{i}.CouponDates,1),1), ...
+        size(Bonds{i}.CouponDates,2))), ...
+        'Format', date_format);
+    Bonds{i}.Dates = datetime(convertCharsToStrings( ...
+        mat2cell(Bonds{i}.Dates, ones(size(Bonds{i}.Dates,1),1), ...
+        size(Bonds{i}.Dates,2))), ...
+        'Format', date_format);
+end
 
 %% Compute the elapsed time
 
