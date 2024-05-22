@@ -1,6 +1,7 @@
 import os
 import datetime
 import pandas as pd
+from scipy.optimize import fsolve
 
 def preprocess_Volumes_front_Month(month:str, save:bool = True)->pd.DataFrame:
     """
@@ -79,60 +80,68 @@ def preprocess_Volumes_Dec(years_offset:int = 0, save:bool = True)->pd.DataFrame
     output_dir = 'Preprocessed/'
 
     # initialize the DataFrame
-    Volumes_Dec = pd.DataFrame()
+    front_Dec = pd.DataFrame()
     prev_date = datetime.datetime(2013, 1, 1) # only dates after this date will be considered
 
     for year in range(2013, 2022):
 
-        # find the corresponding file
-        file_name = f'ICE_FUT_{str(year + years_offset)[-2:]}.csv'
-        # compute the expiry date (penultimate Monday of December)
-        expiry_date = pd.to_datetime(f'{year}-12-01') + pd.DateOffset(months=1, weeks=-2, weekday=0)
-        # bring it back a month
-        last_date = expiry_date - pd.DateOffset(months=1)
+        # find the last quoted date
+        file_name = f'ICE_FUT_{str(year)[-2:]}.csv'
         # open the corresponding file (read the Dates as dates and the VOLUME as float)
-        future_volumes = pd.read_csv(os.path.join(data_dir, futures_dir, file_name),
-            usecols=['Date', 'OPEN', 'CLOSE', 'VOLUME'], parse_dates=['Date'])
+        front_volumes = pd.read_csv(os.path.join(data_dir, futures_dir, file_name),
+            usecols=['Date', 'CLOSE', 'VOLUME'], parse_dates=['Date'])
+        # find the last quoted date (expiry date) as the last date where there is a value in the column
+        expiry_date = front_volumes.loc[front_volumes['VOLUME'].notnull(), 'Date'].max()
+        last_date = expiry_date
+        last_date = last_date - pd.DateOffset(months=1)
+
+        # if there is an offset, we need to find the corresponding file
+        if years_offset > 0:
+            file_name = f'ICE_FUT_{str(year + years_offset)[-2:]}.csv'
+            selected_data = pd.read_csv(os.path.join(data_dir, futures_dir, file_name),
+                usecols=['Date', 'CLOSE', 'VOLUME'], parse_dates=['Date'])
+        else:
+           selected_data = front_volumes
         # select the needed data
-        selected_data = future_volumes.loc[future_volumes['Date'] > prev_date].loc[
-            future_volumes['Date'] <= last_date, ['Date', 'VOLUME', 'OPEN', 'CLOSE']]
+        selected_data = selected_data.loc[selected_data['Date'] > prev_date].loc[
+            selected_data['Date'] <= last_date, ['Date', 'VOLUME', 'CLOSE']]
         # select only the date and the volume
         selected_data = pd.DataFrame(
             {
                 'Date': selected_data['Date'],
                 'Volume': selected_data['VOLUME'], 
-                'Open': selected_data['OPEN'],
-                'Close': selected_data['CLOSE']
+                'Price': selected_data['CLOSE']
             }
         )
-        # fill the NaN value of the open with the corresponding close and take the average
-        selected_data['Open'] = selected_data['Open'].fillna(selected_data['Close'])
-        selected_data['Price'] = (selected_data['Open'] + selected_data['Close']) / 2
         # fill the NaN values of the volume with 0
         selected_data['Volume'] = selected_data['Volume'].fillna(0)
-        # drop the open and close columns
-        selected_data = selected_data.drop(columns=['Open', 'Close'])
         # add the expiry date to the DataFrame
         selected_data['Expiry'] = expiry_date
         # add the date to the DataFrame
-        Volumes_Dec = pd.concat([Volumes_Dec, selected_data])
+        front_Dec = pd.concat([front_Dec, selected_data])
         # update the previous date
         prev_date = last_date
     
     # finally, keep only the dates that also have an associated daily price
     daily_dates = pd.read_csv(os.path.join(data_dir, 'Daily_Future.csv'),
         usecols=['Date'], parse_dates=['Date'])
-    daily_dates = daily_dates.loc[daily_dates['Date'].isin(Volumes_Dec['Date'])]
+    daily_dates = daily_dates.loc[daily_dates['Date'].isin(front_Dec['Date'])]
     # filter the Volumes_Dec DataFrame
-    Volumes_Dec = Volumes_Dec.loc[Volumes_Dec['Date'].isin(daily_dates['Date'])]
+    front_Dec = front_Dec.loc[front_Dec['Date'].isin(daily_dates['Date'])]
 
     # save the DataFrame to a csv file without the index
     if save:
-        Volumes_Dec.to_csv(
-            os.path.join(output_dir, f'Volumes_December_{years_offset}.csv'),
-            index=False)
+        # compose the file name
+        if years_offset == 0:
+            file_name = 'Front_December.csv'
+        elif years_offset == 1:
+            file_name = 'Next_December.csv'
+        else:
+            file_name = f'Next_{years_offset}_December.csv'
+            
+        front_Dec.to_csv(os.path.join(output_dir, file_name), index=False)
 
-    return Volumes_Dec
+    return front_Dec
 
 def preprocess_daily_price(front_dates:pd.Series, save:bool = True)->pd.DataFrame:
     """
@@ -149,20 +158,20 @@ def preprocess_daily_price(front_dates:pd.Series, save:bool = True)->pd.DataFram
     output_dir = 'Preprocessed/'
 
     daily_price = pd.read_csv(os.path.join(data_dir, 'Daily_Future.csv'),
-        usecols=['Date', 'OPEN', 'CLOSE'], parse_dates=['Date'])
+        usecols=['Date', 'CLOSE'], parse_dates=['Date'])
 
     # keep only the dates that are also in the Volumes_dec_front
+    # this also ensures that they are in the range of the Phase III
     daily_price = daily_price.loc[daily_price['Date'].isin(front_dates)]
     # fill the open with the close and take the average
-    daily_price['OPEN'] = daily_price['OPEN'].fillna(daily_price['CLOSE'])
-    daily_price['Price'] = (daily_price['OPEN'] + daily_price['CLOSE']) / 2
-    # drop the open and close columns
-    daily_price = daily_price.drop(columns=['OPEN', 'CLOSE'])
+    daily_price['Price'] = daily_price['CLOSE']
+    # drop the CLOSE column
+    daily_price = daily_price.drop(columns=['CLOSE'])
 
     # save the DataFrame to a csv file without the index
     if save:
         daily_price.to_csv(
-            os.path.join(output_dir, 'Daily_Future_Price.csv'),
+            os.path.join(output_dir, 'Daily_Future.csv'),
             index=False)
     
     return daily_price
@@ -199,8 +208,8 @@ class Bond:
         self.__data = self.load_data()
         # find the first quoted date
         self.__first_quote = self.__find_first_quote()
-        # compute the coupon 
-        self.__coupon_dates = self.__compute_coupon_dates()
+        # compute the coupons 
+        self.__coupons = self.__compute_coupons()
 
         # if no data was found, add it to the list of unfound bonds
         if self.__data.empty:
@@ -313,37 +322,37 @@ class Bond:
         """
         print(self.__data)
 
-# read the bonds from the lis of valid bonds
-bonds = pd.read_csv('Data/Bonds/List_Valid_Bonds.csv', parse_dates=['Maturity Date'],
-    usecols= ['Instrument', 'Coupon Rate', 'Maturity Date', 'Original Amount Issued',
-        'Coupon Frequency', 'Issuer Ticker', 'Parent Ticker'])
-# filter for only the bonds listed in the table
-issuers_to_keep = ['MT', 'ENEI', 'ENGIE', 'LAFARGE', 'HEIG', 'EDF', 'ENI', 'TTEF', 'EONG', 'CEZP', 'VIE']
-bonds = bonds.loc[bonds['Parent Ticker'].isin(issuers_to_keep)]
-# use only bond that have that have a volume higher than 500_000_000
-bonds = bonds.loc[bonds['Original Amount Issued'] >= 500_000_000]
-# use only bonds that are traded in phase III
-bonds = bonds.loc[bonds['Maturity Date'] >= datetime.datetime(2013, 1, 1)]
+# read the bonds from the list of valid bonds
+# bonds = pd.read_csv('Data/Bonds/List_Valid_Bonds.csv', parse_dates=['Maturity Date'],
+#     usecols= ['Instrument', 'Coupon Rate', 'Maturity Date', 'Original Amount Issued',
+#         'Coupon Frequency', 'Issuer Ticker', 'Parent Ticker'])
+# # filter for only the bonds listed in the table
+# issuers_to_keep = ['MT', 'ENEI', 'ENGIE', 'LAFARGE', 'HEIG', 'EDF', 'ENI', 'TTEF', 'EONG', 'CEZP', 'VIE']
+# bonds = bonds.loc[bonds['Parent Ticker'].isin(issuers_to_keep)]
+# # use only bond that have that have a volume higher than 500_000_000
+# bonds = bonds.loc[bonds['Original Amount Issued'] >= 500_000_000]
+# # use only bonds that are traded in phase III
+# bonds = bonds.loc[bonds['Maturity Date'] >= datetime.datetime(2013, 1, 1)]
 
-# create the list of bonds
-bonds_list = {
+# # create the list of bonds
+# bonds_list = {
 
-    row['Instrument'] : Bond(
-        code = row['Instrument'],
-        coupon_rate = row['Coupon Rate'],
-        maturity_date = row['Maturity Date'],
-        coupon_frequency = row['Coupon Frequency'],
-        issuer_ticker = row['Issuer Ticker'],
-        parent_ticker = row['Parent Ticker']
-    )
+#     row['Instrument'] : Bond(
+#         code = row['Instrument'],
+#         coupon_rate = row['Coupon Rate'],
+#         maturity_date = row['Maturity Date'],
+#         coupon_frequency = row['Coupon Frequency'],
+#         issuer_ticker = row['Issuer Ticker'],
+#         parent_ticker = row['Parent Ticker']
+#     )
 
-    for i, row in bonds.iterrows()
-}
+#     for i, row in bonds.iterrows()
+# }
 
-# filter the bonds to only keep the ones that were found
-bonds_list = {key: value for key, value in bonds_list.items() if not value.is_empty()}
+# # filter the bonds to only keep the ones that were found
+# bonds_list = {key: value for key, value in bonds_list.items() if not value.is_empty()}
 
-if __name__ != '__main__':
+if __name__ == '__main__':
     # preprocess the volumes of the futures contracts
     preprocess_Volumes_front_Month('March')
     preprocess_Volumes_front_Month('June')
