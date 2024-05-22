@@ -13,6 +13,8 @@ legend('Front December', 'Next December');
 title('C-Spread for the front December and next December EUA futures');
 % we bring back the low end of the x-axis to 6 months before the first date
 xlim([C_spread_front.Date(1) - calmonths(6), C_spread_front.Date(end)]);
+% have grid points each 0.5 of the y
+yticks(-0.5:0.5:3.5);
 ylim([-1, 5])
 xlabel('Date');
 ylabel('C-Spread');
