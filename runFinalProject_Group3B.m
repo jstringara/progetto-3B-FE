@@ -204,6 +204,34 @@ for i = 1:length(Bonds)
         'Format', date_format);
 end
 
+% Compute the Z-Spread for each bond
+for i = 1:length(Bonds)
+    Bonds{i}.Z_Spreads = compute_ZSpread(Bonds{i}, dates_common, zrates_common);
+end
+
+%% Aggregate the Z-Spreads by volume
+
+Z_spread = zeros(height(Daily_Future), 1);
+total_volume = 0;
+
+for i = 1:length(Bonds)
+    % multiply the Z-Spread by the volume and sum
+    Z_spread = Z_spread + Bonds{i}.Z_Spreads .* double(Bonds{i}.Volume);
+    total_volume = total_volume + double(Bonds{i}.Volume);
+end
+
+% divide by the total volume
+Z_spread = Z_spread / total_volume;
+
+%% Plot the Z-Spread
+
+figure;
+plot(Daily_Future.Date, -Z_spread)
+hold on
+plot(Daily_Future.Date, 100 * risk_free_rate)
+ylim([-0.7, 3.7])
+xlim([C_spread.Date(1) - calmonths(6), C_spread.Date(end)])
+
 %% Compute the elapsed time
 
 toc
