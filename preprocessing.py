@@ -91,9 +91,8 @@ def preprocess_Volumes_Dec(years_offset:int = 0, save:bool = True)->pd.DataFrame
         front_volumes = pd.read_csv(os.path.join(data_dir, futures_dir, file_name),
             usecols=['Date', 'CLOSE', 'VOLUME'], parse_dates=['Date'])
         # find the last quoted date (expiry date) as the last date where there is a value in the column
-        expiry_date = front_volumes.loc[front_volumes['VOLUME'].notnull(), 'Date'].max()
-        last_date = expiry_date
-        last_date = last_date - pd.DateOffset(months=1)
+        last_date = front_volumes.loc[front_volumes['VOLUME'].notnull(), 'Date'].max()
+        # last_date = last_date - pd.DateOffset(months=1)
 
         # if there is an offset, we need to find the corresponding file
         if years_offset > 0:
@@ -102,6 +101,8 @@ def preprocess_Volumes_Dec(years_offset:int = 0, save:bool = True)->pd.DataFrame
                 usecols=['Date', 'CLOSE', 'VOLUME'], parse_dates=['Date'])
         else:
            selected_data = front_volumes
+        # find the expiry as the last quoted date
+        expiry_date = selected_data.loc[selected_data['CLOSE'].notnull(), 'Date'].max()
         # select the needed data
         selected_data = selected_data.loc[selected_data['Date'] > prev_date].loc[
             selected_data['Date'] <= last_date, ['Date', 'VOLUME', 'CLOSE']]
