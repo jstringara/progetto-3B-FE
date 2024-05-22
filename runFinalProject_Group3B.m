@@ -152,11 +152,44 @@ plot_C_front_next(C_spread_front, C_spread_next)
 %% Point 3.b) Compute a single C_spread time series with a roll-over rule
 
 % build a single time series of the C-Spread
+C_spread = table(Daily_Future.Date, zeros(size(Daily_Future.Price)), ...
+    'VariableNames', {'Date', 'C_Spread'});
 
+% each year up to the 15th of November we use the front December
+% after the 15th of November and up to the front's expiry we use the next December
+
+years = unique(year(Daily_Future.Date));
+prev_date = datetime(years(1)-1, 11, 15);
+
+% for each year
+for i = 1:length(years)
+    value_year = years(i);
+    % find the expiry for that year as the expiry with matching year
+    expiry_front = Front_December.Expiry(year(Front_December.Date) == value_year);
+    expiry_front = expiry_front(1);
+    % compute the last front date (15th of November of the same year)
+    last_front_date = datetime(value_year, 11, 15);
+    % from the previous date to the 15th of November take the front December
+    C_spread.C_Spread(C_spread.Date >= prev_date & C_spread.Date < last_front_date) = ...
+        C_spread_front.C_Spread(C_spread.Date >= prev_date & C_spread.Date < last_front_date);
+    % from the 15th of November to the expiry take the next December
+    C_spread.C_Spread(C_spread.Date >= last_front_date & C_spread.Date < expiry_front) = ...
+        C_spread_next.C_Spread(C_spread.Date >= last_front_date & C_spread.Date < expiry_front);
+    % update the previous date
+    prev_date = expiry_front;
+end
+
+% compute the Mean and the Standard Deviation of the C-Spread
+mean_C_spread = mean(C_spread.C_Spread, 'omitnan');
+std_C_spread = std(C_spread.C_Spread, 'omitnan');
+
+% display the results
+disp(['The mean of the C-Spread is: ', num2str(mean_C_spread * 100), '%']);
+disp(['The standard deviation of the C-Spread is: ', num2str(std_C_spread * 100), '%']);
 
 %% Plot the C-Spread
 
-plot_C_Z_r(C_spread_front, risk_free_rate)
+plot_C_Z_r(C_spread, risk_free_rate)
 
 %% Compute the elapsed time
 
