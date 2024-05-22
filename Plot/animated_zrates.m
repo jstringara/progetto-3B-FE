@@ -30,7 +30,7 @@ for i=1:size(zrates,1)
     ylabel('Rates (%)')
     legend('Current', 'Previous')
     grid on
-    ylim([-1, 3.6])
+    ylim([-1, 4])
     pause(0.0000001)
 end
 
