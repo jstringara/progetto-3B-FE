@@ -141,12 +141,23 @@ C_spread_next = log(Next_December.Price ./ Daily_Future.Price) ./ ...
     yearfrac(Daily_Future.Date, Next_December.Expiry, ACT_365) ...
     - risk_free_rate;
 
+% create two tables with the C-Spreads
+C_spread_front = table(Daily_Future.Date, C_spread_front, 'VariableNames', {'Date', 'C_Spread'});
+C_spread_next = table(Daily_Future.Date, C_spread_next, 'VariableNames', {'Date', 'C_Spread'});
+
 %% Plot the two C-Spreads
 
-plot_C_front_next(C_spread_front, C_spread_next, Daily_Future.Date)
+plot_C_front_next(C_spread_front, C_spread_next)
 
 %% Point 3.b) Compute a single C_spread time series with a roll-over rule
 
+% build a single time series of the C-Spread
+
+
 %% Plot the C-Spread
 
-plot_C_Z_r(Daily_Future.Date, C_spread_front, risk_free_rate)
+plot_C_Z_r(C_spread_front, risk_free_rate)
+
+%% Compute the elapsed time
+
+toc
