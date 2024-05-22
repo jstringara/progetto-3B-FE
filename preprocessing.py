@@ -86,7 +86,7 @@ def preprocess_December(years_offset:int = 0, save:bool = True)->pd.DataFrame:
 
     # initialize the DataFrame
     front_Dec = pd.DataFrame()
-    prev_date = datetime.datetime(2013, 1, 1) # only dates after this date will be considered
+    prev_date = datetime.datetime(2013, 1, 2) # only dates after this date will be considered
 
     for year in range(2013, 2022):
 
@@ -109,8 +109,8 @@ def preprocess_December(years_offset:int = 0, save:bool = True)->pd.DataFrame:
         # find the expiry as the last quoted date
         expiry_date = selected_data.loc[selected_data['CLOSE'].notnull(), 'Date'].max()
         # select the needed data
-        selected_data = selected_data.loc[selected_data['Date'] > prev_date].loc[
-            selected_data['Date'] <= last_date, ['Date', 'VOLUME', 'CLOSE']]
+        selected_data = selected_data.loc[selected_data['Date'] >= prev_date].loc[
+            selected_data['Date'] < last_date, ['Date', 'VOLUME', 'CLOSE']]
         # select only the date and the volume
         selected_data = pd.DataFrame(
             {
