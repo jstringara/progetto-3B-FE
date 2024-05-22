@@ -47,7 +47,7 @@ for i=1:height(dates)
         coupons = Bond.CouponRate / 100 * yf;
         coupons(end) = coupons(end) + 1; % add the principal at the end
         % compute the price as a function of the z-spread
-        price = @(z) sum(coupons .* exp(-z .* yf - zrates_coupons .* yf));
+        price = @(z) sum(coupons .* exp( - z - zrates_coupons .* yf));
         % compute the Z-spread using fzero (start from the previous value)
         prev = 0;
         if i > 1

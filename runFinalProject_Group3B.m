@@ -204,29 +204,63 @@ for i = 1:length(Bonds)
         'Format', date_format);
 end
 
-% Compute the Z-Spread for each bond
+%% Compute the Z-Spread for each bond
+
+% start a waitbar
+h = waitbar(0, 'Computing the Z-Spreads');
+tot = length(Bonds);
+
+% group the bonds by issuer
+Bonds_By_Issuer = dictionary();
+
 for i = 1:length(Bonds)
     Bonds{i}.Z_Spreads = compute_ZSpread(Bonds{i}, dates_common, zrates_common);
+    % update the waitbar
+    waitbar(i/tot, h, [num2str(i/tot*100), '%'])
+    % group the bonds by issuer
+    if isempty(Bonds_By_Issuer(Bonds{i}.Issuer))
+        Bonds_By_Issuer(Bonds{i}.Issuer) = {Bonds{i}};
+    else
+        Bonds_By_Issuer(Bonds{i}.Issuer) = [Bonds_By_Issuer(Bonds{i}.Issuer), Bonds{i}];
+    end
+end
+% close the waitbar
+close(h);
+
+%% Compute the Z-Spread for each issuer
+
+% create a table to store the Z-Spreads
+Z_spread = table(Daily_Future.Date, zeros(size(Daily_Future.Date)), ...
+    'VariableNames', {'Date', 'Z_Spread'});
+
+for i = 1:length(Bonds_By_Issuer.keys)
+    % get the issuer
+    issuer = Bonds_By_Issuer.keys{i};
+    % get the bonds
+    bonds = Bonds_By_Issuer(issuer);
+    % compute the total volume of bonds traded for each date
+    total_volume = zeros(height(Daily_Future), 1);
+    for j = 1:length(bonds)
+        total_volume = total_volume + bonds{j}.Volume .* (bonds{j}.Z_Spreads ~= 0);
+    end
+    % aggregate the Z-Spreads
+    Z_spread_issuer = zeros(height(Daily_Future), 1);
+    for j = 1:length(bonds)
+        Z_spread_issuer = Z_spread_issuer + bonds{j}.Volume .* bonds{j}.Z_Spreads;
+    end
+    % normalize the Z-Spreads by the total volume
+    Z_spread_issuer = Z_spread_issuer ./ total_volume;
+    % add the Z-Spreads to the table
+    Z_spread.Z_Spread = Z_spread.Z_Spread + Z_spread_issuer;
 end
 
-%% Aggregate the Z-Spreads by volume
-
-Z_spread = zeros(height(Daily_Future), 1);
-total_volume = 0;
-
-for i = 1:length(Bonds)
-    % multiply the Z-Spread by the volume and sum
-    Z_spread = Z_spread + Bonds{i}.Z_Spreads .* double(Bonds{i}.Volume);
-    total_volume = total_volume + double(Bonds{i}.Volume);
-end
-
-% divide by the total volume
-Z_spread = Z_spread / total_volume;
+% normalize the Z-Spreads by the number of issuers
+Z_spread.Z_Spread = Z_spread.Z_Spread ./ length(Bonds_By_Issuer.keys);
 
 %% Plot the Z-Spread
 
 figure;
-plot(Daily_Future.Date, -Z_spread)
+plot(Daily_Future.Date, 100 * Z_spread.Z_Spread)
 hold on
 plot(Daily_Future.Date, 100 * risk_free_rate)
 ylim([-0.7, 3.7])
