@@ -100,28 +100,35 @@ Daily_Future = readtable('Daily_Future.csv');
 % curve for the dates we do not have
 % find the dates common to the daily prices and the dates for which we have
 % the interest rates
-common_dates = intersect(Daily_Future.Date, dates(:,1));
 
-% find the indices of the common dates in both tables
-idx_daily_prices = ismember(Daily_Future.Date, common_dates);
-idx_dates = ismember(dates(:,1), common_dates);
+% build the zero rates matrix
+zrates_common = zeros(height(Daily_Future), size(zrates,2));
+dates_common = NaT(height(Daily_Future), size(dates,2));
 
-% filter the daily prices for the common dates (they are the same for the front)
-Daily_Future = Daily_Future(idx_daily_prices,:);
-Front_December = Front_December(idx_daily_prices,:);
-Next_December = Next_December(idx_daily_prices,:);
-
-% filter the interest rates curves for the common dates (same for zero rates)
-DF_common = DF(idx_dates,:);
-zero_rates_common = zrates(idx_dates,:);
-zero_rates_dates_common = dates(idx_dates,2:end);
+for i=1:height(Daily_Future)
+    % check if the date is in the dates
+    if ismember(Daily_Future.Date(i), dates(:,1))
+        % find the index of the date
+        idx = find(dates(:,1) == Daily_Future.Date(i));
+        zrates_common(i,:) = zrates(idx,:);
+        % copy the dates
+        dates_common(i,:) = dates(idx,:);
+    else
+        % find the previous date
+        idx = find(dates(:,1) < Daily_Future.Date(i), 1, 'last');
+        % copy the previous date
+        zrates_common(i,:) = zrates(idx,:);
+        % compute the new dates by adding the difference
+        dates_common(i,:) = dates(idx,:) + (Daily_Future.Date(i) - dates(idx,1));
+    end
+end
 
 % interpolate the risk free rate for the needed expiry
 risk_free_rate = zeros(height(Daily_Future),1);
 
 for i=1:height(Daily_Future)
     expiry = Front_December.Expiry(i);
-    risk_free_rate(i) = interp1(zero_rates_dates_common(i,:), zero_rates_common(i,:), expiry, 'linear', 'extrap');
+    risk_free_rate(i) = interp1(dates_common(i,2:end), zrates_common(i,:), expiry, 'linear', 'extrap');
 end
 
 % compute the C-Spread for the front December and next December
@@ -136,8 +143,10 @@ C_spread_next = log(Next_December.Price ./ Daily_Future.Price) ./ ...
 
 %% Plot the two C-Spreads
 
-plot_C_front_next(C_spread_front, C_spread_next, common_dates)
+plot_C_front_next(C_spread_front, C_spread_next, Daily_Future.Date)
+
+%% Point 3.b) Compute a single C_spread time series with a roll-over rule
 
 %% Plot the C-Spread
 
-plot_C_Z_r(common_dates, C_spread_front, risk_free_rate)
+plot_C_Z_r(Daily_Future.Date, C_spread_front, risk_free_rate)
