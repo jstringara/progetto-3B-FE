@@ -8,7 +8,8 @@ function animated_zrates(zrates, dates)
 % animation for the zero rates
 figure;
 % create the annotation for the difference between the 3M and 1Y zero rates
-spread_box = annotation('textbox', [0.15, 0.8, 0.1, 0.1], 'String', 'Spread 3M-1Y: ', 'FitBoxToText', 'on')
+spread_box = ...
+    annotation('textbox', [0.15, 0.8, 0.1, 0.1], 'String', 'Spread 3M-1Y: ', 'FitBoxToText', 'on');
 
 for i=1:size(zrates,1)
     plot(dates(i,2:end), 100 * zrates(i,:))
@@ -29,8 +30,8 @@ for i=1:size(zrates,1)
     ylabel('Rates (%)')
     legend('Current', 'Previous')
     grid on
-    ylim([-0.6, 3.6])
-    pause(0.00001)
+    ylim([-1, 3.6])
+    pause(0.0000001)
 end
 
 end
