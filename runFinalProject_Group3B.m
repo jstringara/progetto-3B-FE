@@ -44,7 +44,7 @@ OIS_Data{:,2:end} = OIS_Data{:,2:end} / 100;
 % bootstrap the curves
 [dates, DF, zrates] = bootstrapCurves(OIS_Data);
 
-animated_zrates(zrates, dates)
+% animated_zrates(zrates, dates)
 
 %% Point 2) Verify that the front December EUA future is the most liquid one in terms of volume
 
