@@ -109,6 +109,7 @@ idx_dates = ismember(dates(:,1), common_dates);
 % filter the daily prices for the common dates (they are the same for the front)
 Daily_Future = Daily_Future(idx_daily_prices,:);
 Front_December = Front_December(idx_daily_prices,:);
+Next_December = Next_December(idx_daily_prices,:);
 
 % filter the interest rates curves for the common dates (same for zero rates)
 DF_common = DF(idx_dates,:);
@@ -123,12 +124,20 @@ for i=1:height(Daily_Future)
     risk_free_rate(i) = interp1(zero_rates_dates_common(i,:), zero_rates_common(i,:), expiry, 'linear', 'extrap');
 end
 
-% compute the C-Spread
+% compute the C-Spread for the front December and next December
 ACT_365 = 3;
-C_spread = log(Front_December.Price ./ Daily_Future.Price) ./ ...
+C_spread_front = log(Front_December.Price ./ Daily_Future.Price) ./ ...
     yearfrac(Daily_Future.Date, Front_December.Expiry, ACT_365) ...
     - risk_free_rate;
 
+C_spread_next = log(Next_December.Price ./ Daily_Future.Price) ./ ...
+    yearfrac(Daily_Future.Date, Next_December.Expiry, ACT_365) ...
+    - risk_free_rate;
+
+%% Plot the two C-Spreads
+
+plot_C_front_next(C_spread_front, C_spread_next, common_dates)
+
 %% Plot the C-Spread
 
-plot_C_Z_r(common_dates, C_spread, risk_free_rate)
+plot_C_Z_r(common_dates, C_spread_front, risk_free_rate)
