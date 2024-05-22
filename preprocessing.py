@@ -216,6 +216,7 @@ def preprocess_bonds(front_dates:pd.Series, save:bool = True)->dict[str: Bond]:
             coupon_rate = row['Coupon Rate'],
             maturity_date = row['Maturity Date'],
             coupon_frequency = row['Coupon Frequency'],
+            volume = row['Original Amount Issued'],
             issuer_ticker = row['Issuer Ticker'],
             parent_ticker = row['Parent Ticker']
         )

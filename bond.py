@@ -11,7 +11,7 @@ class Bond:
     __start_date = datetime.datetime(2013, 1, 1)
     __end_date = datetime.datetime(2021, 12, 31)
 
-    def __init__(self, code, coupon_rate, maturity_date, coupon_frequency, issuer_ticker, parent_ticker):
+    def __init__(self, code, coupon_rate, maturity_date, coupon_frequency, volume, issuer_ticker, parent_ticker):
         """
         Constructor for the Bond class.
         Input:
@@ -30,6 +30,7 @@ class Bond:
         self.__coupon_frequency = coupon_frequency
         self.__issuer_ticker = issuer_ticker
         self.__parent_ticker = parent_ticker
+        self.__volume = volume
         # load the data for the bond
         self.__data = self.load_data()
         # find the first quoted date
@@ -58,6 +59,7 @@ class Bond:
   Coupon rate: {self.__coupon_rate}%
   Maturity date: {self.__maturity_date.strftime("%Y-%m-%d")}
   Coupon frequency: {self.__coupon_frequency} 
+  Volume: {self.__volume}
   Issuer ticker: {self.__issuer_ticker}   
   Parent ticker: {self.__parent_ticker}
   First quote: { self.__first_quote.strftime("%Y-%m-%d") if not pd.isnull(self.__first_quote) else 'Not found'}
@@ -150,6 +152,10 @@ class Bond:
         ]
         coupon_dates.sort()
 
+        # if there are no coupon dates, add the maturity date
+        if not coupon_dates:
+            coupon_dates.append(self.__maturity_date)
+
         # # move to business days if the date is not a business day
         # for i, date in enumerate(coupon_dates):
         #     if date.weekday() in [5, 6]:
@@ -183,6 +189,7 @@ class Bond:
             'CouponRate': self.__coupon_rate,
             'MaturityDate': self.__maturity_date.strftime('%Y-%m-%d'),
             'CouponFrequency': self.__coupon_frequency,
+            'Volume': self.__volume,
             'IssuerTicker': self.__issuer_ticker,
             'ParentTicker': self.__parent_ticker,
             'FirstQuote': self.__first_quote.strftime('%Y-%m-%d') if not pd.isnull(self.__first_quote) else '',
