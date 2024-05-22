@@ -1,7 +1,12 @@
 import os
 import datetime
 import pandas as pd
+import numpy as np
 from scipy.optimize import fsolve
+from scipy.io import savemat
+
+# import the Bond class from the bond.py file
+from bond import Bond
 
 def preprocess_Volumes_front_Month(month:str, save:bool = True)->pd.DataFrame:
     """
@@ -64,7 +69,7 @@ def preprocess_Volumes_front_Month(month:str, save:bool = True)->pd.DataFrame:
 
     return Volumes_march
 
-def preprocess_Volumes_Dec(years_offset:int = 0, save:bool = True)->pd.DataFrame:
+def preprocess_December(years_offset:int = 0, save:bool = True)->pd.DataFrame:
     """
     Function to preprocess the data of the volumes of the futures contracts in December.
     Input:
@@ -177,181 +182,66 @@ def preprocess_daily_price(front_dates:pd.Series, save:bool = True)->pd.DataFram
     
     return daily_price
 
-# Bond class
-class Bond:
+# read the data of the bonds and pass them to matlab
+def preprocess_bonds(front_dates:pd.Series, save:bool = True)->dict[str: Bond]:
+    """
+    Preprocess the data of the bonds and pass them to matlab.
+    """
 
-    # class attribute to keep track of the number of bonds that were not found
-    __unfound_info = []
-    # class attribute (we only want data for Phase III)
-    __start_date = datetime.datetime(2013, 1, 1)
-    __end_date = datetime.datetime(2021, 12, 31)
+    # directory of the data
+    data_dir = 'Data/'
+    bonds_dir = 'Bonds/'
+    output_dir = 'Preprocessed/'
 
-    def __init__(self, code, coupon_rate, maturity_date, coupon_frequency, issuer_ticker, parent_ticker):
-        """
-        Constructor for the Bond class.
-        Input:
-        - code: string with the code of the bond.
-        - coupon_rate: float with the coupon rate of the bond.
-        - maturity_date: datetime.date with the maturity date of the bond.
-        - coupon_frequency: string with the frequency of the coupon payments.
-        - issuer_ticker: string with the ticker of the issuer.
-        - parent_ticker: string with the ticker of the parent company.
-        """
+    # read the bonds from the list of valid bonds
+    bonds = pd.read_csv(os.path.join(data_dir, bonds_dir, 'List_Valid_Bonds.csv'),
+        parse_dates=['Maturity Date'],
+        usecols= ['Instrument', 'Coupon Rate', 'Maturity Date', 'Original Amount Issued',
+            'Coupon Frequency', 'Issuer Ticker', 'Parent Ticker'])
+    # filter for only the bonds listed in the table
+    issuers_to_keep = ['MT', 'ENEI', 'ENGIE', 'LAFARGE', 'HEIG', 'EDF', 'ENI', 'TTEF', 'MAERS',
+        'EONG', 'CEZP', 'VIE']
+    bonds = bonds.loc[bonds['Parent Ticker'].isin(issuers_to_keep)]
+    # use only bond that have that have a volume higher than 500_000_000
+    bonds = bonds.loc[bonds['Original Amount Issued'] >= 500_000_000]
+    # use only bonds that are traded in phase III
+    bonds = bonds.loc[bonds['Maturity Date'] >= datetime.datetime(2013, 1, 1)]
+    bonds = bonds.loc[bonds['Maturity Date'] <= datetime.datetime(2021, 12, 31)]
 
-        # save the attributes
-        self.__code = code
-        self.__coupon_rate = coupon_rate
-        self.__maturity_date = maturity_date
-        self.__coupon_frequency = coupon_frequency
-        self.__issuer_ticker = issuer_ticker
-        self.__parent_ticker = parent_ticker
-        # load the data for the bond
-        self.__data = self.load_data()
-        # find the first quoted date
-        self.__first_quote = self.__find_first_quote()
-        # compute the coupons 
-        self.__coupons = self.__compute_coupons()
+    # create the dict of bonds
+    bonds_list = {
 
-        # if no data was found, add it to the list of unfound bonds
-        if self.__data.empty:
-            self.__unfound_info.append(self)
-    
-    @classmethod
-    def get_unfound_info(cls):
-        """
-        Return the list of bonds that were not found.
-        """
-        return cls.__unfound_info
-    
-    def __repr__(self)->str:
-        """
-        String representation of the Bond object.
-        """
-        # create a table with the information of the bond
-        return f"""
-  --- Bond {self.__code} ---
-  Coupon rate: {self.__coupon_rate}%
-  Maturity date: {self.__maturity_date.strftime("%Y-%m-%d")}
-  Coupon frequency: {self.__coupon_frequency} 
-  Issuer ticker: {self.__issuer_ticker}   
-  Parent ticker: {self.__parent_ticker}
-  First quote: { self.__first_quote.strftime("%Y-%m-%d") if not pd.isnull(self.__first_quote) else 'Not found'}
-  Status: {'Found' if not self.__data.empty else 'Not found'}
-  Number of coupon payments: {len(self.__coupon_dates)}
-  Coupon dates: {" ".join([date.strftime('%Y-%m-%d') for date in self.__coupon_dates])}
-  -------------------
-  """
+        row['Instrument'] : Bond(
+            code = row['Instrument'],
+            coupon_rate = row['Coupon Rate'],
+            maturity_date = row['Maturity Date'],
+            coupon_frequency = row['Coupon Frequency'],
+            issuer_ticker = row['Issuer Ticker'],
+            parent_ticker = row['Parent Ticker']
+        )
 
-    def is_empty(self)->bool:
-        """
-        Check if the data of the bond is empty.
-        """
-        return self.__data.empty
-    
-    def load_data(self)->pd.DataFrame:
-        """
-        Load the data for the bond from the csv file of the parent company.
-        """
-        # load the data for the parent company
-        data_dir = 'Data/'
-        bonds_dir = 'Bonds/'
+        for i, row in bonds.iterrows()
+    }
 
-        parent_data = pd.read_csv(os.path.join(data_dir, bonds_dir, f'{self.__parent_ticker}.csv'),
-            parse_dates=['Date'], dayfirst=False)
-        # drop the first and second columns
-        parent_data = parent_data.drop(columns=[parent_data.columns[0], parent_data.columns[1]])
+    # filter the bonds to only keep the ones that were found
+    bonds_list = {key: value for key, value in bonds_list.items() if not value.is_empty()}
 
-        # try to extract the data
-        out_df = pd.DataFrame()
-        try:
-            out_df = parent_data[['Date', self.__code]]
-            # select only the dates that are in the range of the bond
-            out_df = out_df.loc[out_df['Date'] >= self.__start_date]
-            out_df = out_df.loc[out_df['Date'] <= self.__end_date]
-        except KeyError:
-            # add it to the unfound bonds
-            self.__unfound_info.append(self)
-        
-        return out_df
+    # filter the data to only keep the dates in the front
+    _ = [
+        value.filter_data(front_dates)
+        for key, value in bonds_list.items()
+    ]
 
-    def __find_first_quote(self)->datetime.date:
-        """
-        Find the first date where the bond was quoted.
-        """
-        # if the data is empty, return None
-        if self.__data.empty:
-            return None
-        # find the first date where the bond was quoted
-        first_quote = self.__data.loc[self.__data[self.__code].notnull(), 'Date'].min()
-        return first_quote
-    
-    def __compute_coupon_dates(self)->list[datetime.date]:
-        """
-        Compute the dates of the coupon payments using the frequency of the coupon and the maturity date.
-        """
-
-        if pd.isnull(self.__first_quote):
-            return []
-
-        # compute the time difference (expressed in months) between the first quote and the maturity date
-        time_diff = self.__maturity_date.to_period('M') - self.__first_quote.to_period('M')
-        time_diff = time_diff.n
-
-        # find the time difference between coupons (in months)
-        coupon_time_diff = 12 // self.__coupon_frequency
-
-        # compute the number of coupons that are paid over the life of the bond
-        num_coupons = time_diff // coupon_time_diff
-
-        # compute the coupon dates
-        coupon_dates = [
-            self.__maturity_date - pd.DateOffset(months=coupon_time_diff * i)
-            for i in reversed(range(num_coupons))
+    # save the dictionary to a .mat file
+    if save:
+        # convert to a dictionary of structures for matlab use
+        bonds_dict = [
+            value.to_matlab_cellarray()
+            for key, value in bonds_list.items()
         ]
-        coupon_dates.sort()
+        savemat(os.path.join(output_dir, 'Bonds.mat'), {'Bonds': bonds_dict})
 
-        # # move to business days if the date is not a business day
-        # for i, date in enumerate(coupon_dates):
-        #     if date.weekday() in [5, 6]:
-        #         coupon_dates[i] = date - pd.DateOffset(weekday=0)
-
-        return coupon_dates
-
-    def show_data(self)->None:
-        """
-        Show the data of the bond.
-        """
-        print(self.__data)
-
-# read the bonds from the list of valid bonds
-# bonds = pd.read_csv('Data/Bonds/List_Valid_Bonds.csv', parse_dates=['Maturity Date'],
-#     usecols= ['Instrument', 'Coupon Rate', 'Maturity Date', 'Original Amount Issued',
-#         'Coupon Frequency', 'Issuer Ticker', 'Parent Ticker'])
-# # filter for only the bonds listed in the table
-# issuers_to_keep = ['MT', 'ENEI', 'ENGIE', 'LAFARGE', 'HEIG', 'EDF', 'ENI', 'TTEF', 'EONG', 'CEZP', 'VIE']
-# bonds = bonds.loc[bonds['Parent Ticker'].isin(issuers_to_keep)]
-# # use only bond that have that have a volume higher than 500_000_000
-# bonds = bonds.loc[bonds['Original Amount Issued'] >= 500_000_000]
-# # use only bonds that are traded in phase III
-# bonds = bonds.loc[bonds['Maturity Date'] >= datetime.datetime(2013, 1, 1)]
-
-# # create the list of bonds
-# bonds_list = {
-
-#     row['Instrument'] : Bond(
-#         code = row['Instrument'],
-#         coupon_rate = row['Coupon Rate'],
-#         maturity_date = row['Maturity Date'],
-#         coupon_frequency = row['Coupon Frequency'],
-#         issuer_ticker = row['Issuer Ticker'],
-#         parent_ticker = row['Parent Ticker']
-#     )
-
-#     for i, row in bonds.iterrows()
-# }
-
-# # filter the bonds to only keep the ones that were found
-# bonds_list = {key: value for key, value in bonds_list.items() if not value.is_empty()}
+    return bonds_list
 
 if __name__ == '__main__':
     # preprocess the volumes of the futures contracts
@@ -359,8 +249,10 @@ if __name__ == '__main__':
     preprocess_Volumes_front_Month('June')
     preprocess_Volumes_front_Month('September')
     # preprocess the volumes of the futures contracts in December (front, next and second next)
-    front_december = preprocess_Volumes_Dec()
-    preprocess_Volumes_Dec(years_offset=1)
-    preprocess_Volumes_Dec(years_offset=2)
+    front_december = preprocess_December()
+    preprocess_December(years_offset=1)
+    preprocess_December(years_offset=2)
     # preprocess the daily price of the futures contracts
     preprocess_daily_price(front_december['Date'])
+    # preprocess the bonds
+    preprocess_bonds(front_december['Date'])
