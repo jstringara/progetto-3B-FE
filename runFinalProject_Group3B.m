@@ -201,7 +201,7 @@ for i = 1:length(Bonds)
     Bonds{i}.FirstQuote = string(Bonds{i}.FirstQuote);
     Bonds{i}.CouponDates = string(Bonds{i}.CouponDates);
     Bonds{i}.Dates = string(Bonds{i}.Dates);
-    
+
     % convert the dates to datetime
     Bonds{i}.MaturityDate = datetime(Bonds{i}.MaturityDate, 'InputFormat', date_format);
     Bonds{i}.FirstQuote = datetime(Bonds{i}.FirstQuote, 'InputFormat', date_format);
@@ -255,6 +255,10 @@ for issuer = fields(Bonds_By_Issuer)'
     total_volume = zeros(height(Daily_Future), 1);
     Z_spread_issuer = zeros(height(Daily_Future), 1);
     for j = 1:length(bonds)
+        % exclude bond with code "XS0877820422" (it has NaN values)
+        if bonds{j}.Code == "XS0877820422"
+            continue
+        end
         Z_spread_issuer = Z_spread_issuer + bonds{j}.Volume .* bonds{j}.Z_Spreads;
         total_volume = total_volume + bonds{j}.Volume .* (bonds{j}.Z_Spreads ~= 0);
     end
@@ -264,22 +268,34 @@ for issuer = fields(Bonds_By_Issuer)'
     Z_spread_issuer(isnan(Z_spread_issuer)) = 0;
     % add the Z-Spreads to the table
     Z_spread.Z_Spread = Z_spread.Z_Spread + Z_spread_issuer;
-    % check if the ZSpread is over 4%
-    if any(Z_spread_issuer > 0.04)
-        disp(['Issuer ', issuer{1}, ' has Z-Spread over 4%'])
-        disp('In date ')
-        datestr(Daily_Future.Date(Z_spread_issuer > 0.04))
-    end
     % add the number of active issuers
     total_issuers_active = total_issuers_active + (total_volume ~= 0);
 end
 
 % normalize the Z-Spreads by the number of issuers
 Z_spread.Z_Spread = Z_spread.Z_Spread ./ total_issuers_active;
+Z_spread.Z_Spread(isnan(Z_spread.Z_Spread)) = 0;
 
 %% Plot the Z-Spread
 
 plot_C_Z_r(C_spread, Z_spread, risk_free_rate)
+
+%% Mean and Variance of the Z-Spread (only on dates before 2021)
+
+mean_Z_spread = mean(Z_spread.Z_Spread(Z_spread.Date < datetime(2021, 1, 1)));
+std_Z_spread = std(Z_spread.Z_Spread(Z_spread.Date < datetime(2021, 1, 1)));
+
+% display the results
+disp(['The mean of the Z-Spread is: ', num2str(mean_Z_spread * 100), '%']);
+disp(['The standard deviation of the Z-Spread is: ', num2str(std_Z_spread * 100), '%']);
+
+%% Meand and Variance for the interest rates (only on dates before 2021)
+
+mean_zrates = mean(risk_free_rate(dates_common(:,1) < datetime(2021, 1, 1)));
+std_zrates = std(risk_free_rate(dates_common(:,1) < datetime(2021, 1, 1)));
+
+disp(['The mean of the zero rates is: ', num2str(mean_zrates * 100), '%']);
+disp(['The standard deviation of the zero rates is: ', num2str(std_zrates * 100), '%']);
 
 %% Compute the elapsed time
 
