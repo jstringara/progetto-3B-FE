@@ -141,7 +141,7 @@ C_spread_next = table(Daily_Future.Date, C_spread_next, 'VariableNames', {'Date'
 
 %% Plot the two C-Spreads
 
-plot_C_front_next(C_spread_front, C_spread_next)
+% plot_C_front_next(C_spread_front, C_spread_next)
 
 %% Point 3.b) Compute a single C_spread time series with a roll-over rule
 
@@ -183,7 +183,7 @@ disp(['The standard deviation of the C-Spread is: ', num2str(std_C_spread * 100)
 
 %% Plot the C-Spread
 
-plot_C_Z_r(C_spread, risk_free_rate)
+% plot_C(C_spread)
 
 %% Load the data of the Bonds
 
@@ -191,17 +191,26 @@ load('Bonds.mat');
 
 % transform the dates into datetime
 date_format = 'yyyy-MM-dd';
+
 for i = 1:length(Bonds)
-    Bonds{i}.MaturityDate = datetime(convertCharsToStrings(Bonds{i}.MaturityDate), 'Format', date_format);
-    Bonds{i}.FirstQuote = datetime(convertCharsToStrings(Bonds{i}.FirstQuote), 'Format', date_format);
-    Bonds{i}.CouponDates = datetime(convertCharsToStrings( ...
-        mat2cell(Bonds{i}.CouponDates, ones(size(Bonds{i}.CouponDates,1),1), ...
-        size(Bonds{i}.CouponDates,2))), ...
-        'Format', date_format);
-    Bonds{i}.Dates = datetime(convertCharsToStrings( ...
-        mat2cell(Bonds{i}.Dates, ones(size(Bonds{i}.Dates,1),1), ...
-        size(Bonds{i}.Dates,2))), ...
-        'Format', date_format);
+
+    % convert chars to strings
+    Bonds{i}.Issuer = string(Bonds{i}.Issuer);
+    Bonds{i}.Code = string(Bonds{i}.Code);
+    Bonds{i}.MaturityDate = string(Bonds{i}.MaturityDate);
+    Bonds{i}.FirstQuote = string(Bonds{i}.FirstQuote);
+    Bonds{i}.CouponDates = string(Bonds{i}.CouponDates);
+    Bonds{i}.Dates = string(Bonds{i}.Dates);
+    
+    % convert the dates to datetime
+    Bonds{i}.MaturityDate = datetime(Bonds{i}.MaturityDate, 'InputFormat', date_format);
+    Bonds{i}.FirstQuote = datetime(Bonds{i}.FirstQuote, 'InputFormat', date_format);
+    Bonds{i}.CouponDates = datetime(Bonds{i}.CouponDates, 'InputFormat', date_format);
+    Bonds{i}.Dates = datetime(Bonds{i}.Dates, 'InputFormat', date_format);
+
+    % convert the volume to double
+    Bonds{i}.Volume = double(Bonds{i}.Volume);
+
 end
 
 %% Compute the Z-Spread for each bond
@@ -211,18 +220,21 @@ h = waitbar(0, 'Computing the Z-Spreads');
 tot = length(Bonds);
 
 % group the bonds by issuer
-Bonds_By_Issuer = dictionary();
+Bonds_By_Issuer = struct;
 
 for i = 1:length(Bonds)
+    % compute the Z-Spread for the bond
     Bonds{i}.Z_Spreads = compute_ZSpread(Bonds{i}, dates_common, zrates_common);
     % update the waitbar
-    waitbar(i/tot, h, [num2str(i/tot*100), '%'])
-    % group the bonds by issuer
-    if isempty(Bonds_By_Issuer(Bonds{i}.Issuer))
-        Bonds_By_Issuer(Bonds{i}.Issuer) = {Bonds{i}};
+    waitbar(i/tot, h, ['Computing the Z-Spreads: ', num2str(i/tot*100), '%'])
+    
+    % add the bond to the issuer in the struct
+    if isfield(Bonds_By_Issuer, Bonds{i}.Issuer)
+        Bonds_By_Issuer.(Bonds{i}.Issuer){end+1} = Bonds{i};
     else
-        Bonds_By_Issuer(Bonds{i}.Issuer) = [Bonds_By_Issuer(Bonds{i}.Issuer), Bonds{i}];
+        Bonds_By_Issuer.(Bonds{i}.Issuer) = {Bonds{i}};
     end
+
 end
 % close the waitbar
 close(h);
@@ -233,38 +245,41 @@ close(h);
 Z_spread = table(Daily_Future.Date, zeros(size(Daily_Future.Date)), ...
     'VariableNames', {'Date', 'Z_Spread'});
 
-for i = 1:length(Bonds_By_Issuer.keys)
-    % get the issuer
-    issuer = Bonds_By_Issuer.keys{i};
-    % get the bonds
-    bonds = Bonds_By_Issuer(issuer);
+total_issuers_active = zeros(height(Daily_Future), 1);
+
+% iterate over the fields of the struct (the issuers)
+for issuer = fields(Bonds_By_Issuer)'
+    % get the bonds of the issuer
+    bonds = Bonds_By_Issuer.(issuer{1});
     % compute the total volume of bonds traded for each date
     total_volume = zeros(height(Daily_Future), 1);
-    for j = 1:length(bonds)
-        total_volume = total_volume + bonds{j}.Volume .* (bonds{j}.Z_Spreads ~= 0);
-    end
-    % aggregate the Z-Spreads
     Z_spread_issuer = zeros(height(Daily_Future), 1);
     for j = 1:length(bonds)
         Z_spread_issuer = Z_spread_issuer + bonds{j}.Volume .* bonds{j}.Z_Spreads;
+        total_volume = total_volume + bonds{j}.Volume .* (bonds{j}.Z_Spreads ~= 0);
     end
-    % normalize the Z-Spreads by the total volume
+    % normalize the Z-Spreads of the issuer by the total volume
     Z_spread_issuer = Z_spread_issuer ./ total_volume;
+    % fill the NaN values (no bonds traded)
+    Z_spread_issuer(isnan(Z_spread_issuer)) = 0;
     % add the Z-Spreads to the table
     Z_spread.Z_Spread = Z_spread.Z_Spread + Z_spread_issuer;
+    % check if the ZSpread is over 4%
+    if any(Z_spread_issuer > 0.04)
+        disp(['Issuer ', issuer{1}, ' has Z-Spread over 4%'])
+        disp('In date ')
+        datestr(Daily_Future.Date(Z_spread_issuer > 0.04))
+    end
+    % add the number of active issuers
+    total_issuers_active = total_issuers_active + (total_volume ~= 0);
 end
 
 % normalize the Z-Spreads by the number of issuers
-Z_spread.Z_Spread = Z_spread.Z_Spread ./ length(Bonds_By_Issuer.keys);
+Z_spread.Z_Spread = Z_spread.Z_Spread ./ total_issuers_active;
 
 %% Plot the Z-Spread
 
-figure;
-plot(Daily_Future.Date, 100 * Z_spread.Z_Spread)
-hold on
-plot(Daily_Future.Date, 100 * risk_free_rate)
-ylim([-0.7, 3.7])
-xlim([C_spread.Date(1) - calmonths(6), C_spread.Date(end)])
+plot_C_Z_r(C_spread, Z_spread, risk_free_rate)
 
 %% Compute the elapsed time
 
