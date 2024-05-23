@@ -26,7 +26,8 @@ for i=1:height(dates)
         yf_coupon = yearfrac([dates(i,1); coupon_dates(1:end-1)], coupon_dates, EU_30_360);
         yf = yearfrac(dates(i,1), coupon_dates, EU_30_360);
         % any yeafraction is less than 0.01, set the Z-spread to 0
-        if any(yf < 0.1)
+        % # TODO: sistemare la condizione. Il vecchio era se qualunque yf è minore di 0.01
+        if max(yf) < 0.075
             ZSpreads(i) = 0;
             continue;
         end
