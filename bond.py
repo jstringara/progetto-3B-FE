@@ -11,7 +11,7 @@ class Bond:
     __start_date = datetime.datetime(2013, 1, 1)
     __end_date = datetime.datetime(2021, 12, 31)
 
-    def __init__(self, code, coupon_rate, maturity_date, coupon_frequency, volume, issuer_ticker, parent_ticker):
+    def __init__(self, code, coupon_rate, maturity_date, coupon_frequency, volume, issuer):
         """
         Constructor for the Bond class.
         Input:
@@ -19,8 +19,7 @@ class Bond:
         - coupon_rate: float with the coupon rate of the bond.
         - maturity_date: datetime.date with the maturity date of the bond.
         - coupon_frequency: string with the frequency of the coupon payments.
-        - issuer_ticker: string with the ticker of the issuer.
-        - parent_ticker: string with the ticker of the parent company.
+        - issuer: string with the ticker of the issuer.
         """
 
         # save the attributes
@@ -28,8 +27,7 @@ class Bond:
         self.__coupon_rate = coupon_rate
         self.__maturity_date = maturity_date
         self.__coupon_frequency = coupon_frequency
-        self.__issuer_ticker = issuer_ticker
-        self.__parent_ticker = parent_ticker
+        self.__issuer = issuer
         self.__volume = volume
         # load the data for the bond
         self.__data = self.load_data()
@@ -60,8 +58,7 @@ class Bond:
   Maturity date: {self.__maturity_date.strftime("%Y-%m-%d")}
   Coupon frequency: {self.__coupon_frequency} 
   Volume: {self.__volume}
-  Issuer ticker: {self.__issuer_ticker}   
-  Parent ticker: {self.__parent_ticker}
+  Issuer ticker: {self.__issuer}
   First quote: { self.__first_quote.strftime("%Y-%m-%d") if not pd.isnull(self.__first_quote) else 'Not found'}
   Status: {'Found' if not self.__data.empty else 'Not found'}
   Number of coupon payments: {len(self.__coupon_dates)}
@@ -90,7 +87,7 @@ class Bond:
         data_dir = 'Data/'
         bonds_dir = 'Bonds/'
 
-        parent_data = pd.read_csv(os.path.join(data_dir, bonds_dir, f'{self.__parent_ticker}.csv'),
+        parent_data = pd.read_csv(os.path.join(data_dir, bonds_dir, f'{self.__issuer}.csv'),
             parse_dates=['Date'], dayfirst=False)
         # drop the first and second columns
         parent_data = parent_data.drop(columns=[parent_data.columns[0], parent_data.columns[1]])
@@ -190,8 +187,7 @@ class Bond:
             'MaturityDate': self.__maturity_date.strftime('%Y-%m-%d'),
             'CouponFrequency': self.__coupon_frequency,
             'Volume': self.__volume,
-            'IssuerTicker': self.__issuer_ticker,
-            'ParentTicker': self.__parent_ticker,
+            'Issuer': self.__issuer,
             'FirstQuote': self.__first_quote.strftime('%Y-%m-%d') if not pd.isnull(self.__first_quote) else '',
             'CouponDates': [date.strftime('%Y-%m-%d') for date in self.__coupon_dates],
             'Dates': self.__data['Date'].dt.strftime('%Y-%m-%d').tolist(),
