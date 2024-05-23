@@ -96,7 +96,7 @@ class Bond:
         out_df = pd.DataFrame()
         try:
             out_df = parent_data[['Date', self.__code]]
-            # select only the dates that are in the range of the bond
+            # select only the dates that are in the range of Phase III
             out_df = out_df.loc[out_df['Date'] >= self.__start_date]
             out_df = out_df.loc[out_df['Date'] <= self.__end_date]
         except KeyError:

@@ -204,9 +204,6 @@ def preprocess_bonds(front_dates:pd.Series, save:bool = True)->dict[str: Bond]:
     bonds = bonds.loc[bonds['Parent Ticker'].isin(issuers_to_keep)]
     # use only bond that have that have a volume higher than 500_000_000
     bonds = bonds.loc[bonds['Original Amount Issued'] >= 500_000_000]
-    # use only bonds that are traded in phase III
-    bonds = bonds.loc[bonds['Maturity Date'] >= datetime.datetime(2013, 1, 1)]
-    bonds = bonds.loc[bonds['Maturity Date'] <= datetime.datetime(2021, 12, 31)]
 
     # create the dict of bonds
     bonds_list = {
