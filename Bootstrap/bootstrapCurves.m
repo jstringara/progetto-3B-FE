@@ -68,7 +68,7 @@ for j = 19:length(offsets)-1
     S = S + delta_fwd_1y(:,j-17) .* DF(:,j);
 end
 
-% TODO: questo ciclo passa per tutti gli indici che deve visitare? Quel -17 è corretto?
+% # TODO questo ciclo passa per tutti gli indici che deve visitare? Quel -17 è corretto?
 
 % finally compute the zero rates
 delta_rates = zeros(length(t0), length(offsets)-1);
