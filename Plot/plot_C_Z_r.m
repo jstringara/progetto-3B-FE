@@ -23,4 +23,6 @@ ylim([-0.7, 3.7])
 title('C-Spread')
 grid on
 
+legend('C-Spread', 'Z-Spread', 'Risk-Free Rate')
+
 end

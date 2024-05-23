@@ -15,4 +15,6 @@ xlim([C_spread.Date(1) - calmonths(6), C_spread.Date(end)])
 title('C-Spread')
 grid on
 
+legend('C-Spread')
+
 end
