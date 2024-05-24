@@ -9,7 +9,10 @@ function ZSpreads = compute_ZSpread(Bond, dates, zrates)
 % compute the Z-Spread
 ZSpreads = zeros(height(dates), 1);
 
+% TODO: parallelize this using fsolve instead of fzero
+
 for i=1:height(dates)
+
     % set to 0 the Z-spread if the bond is not active
     if isnan(Bond.Prices(i)) 
         ZSpreads(i) = 0;
