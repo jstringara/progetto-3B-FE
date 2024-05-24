@@ -36,6 +36,8 @@ class Bond:
         # compute the coupons 
         self.__coupon_dates = self.__compute_coupon_dates()
 
+        # TODO: add the year fractions along with the prices or coupons
+
         # if no data was found, add it to the list of unfound bonds
         if self.__data.empty:
             self.__unfound_info.append(self)
