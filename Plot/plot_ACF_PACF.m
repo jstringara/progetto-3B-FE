@@ -1,23 +1,17 @@
-function plot_ACF_PACF(acf, pacf, title)
+function plot_ACF_PACF(table, title)
 % plot_ACF_PACF plots the ACF and PACF
 %
 % INPUTS
-% - acf: the ACF [table]
-% - pacf: the PACF [table]
-% - title: the title of the plot [string]
+% - table: the table with the data
 
 figure;
 subplot(2, 1, 1)
-stem(acf.Lags, acf.ACF, 'filled', 'MarkerSize', 3)
-
-% title("ACF")
-grid on
+autocorr(table)
 
 subplot(2, 1, 2)
-stem(pacf.Lags, pacf.PACF, 'filled', 'MarkerSize', 3)
-% title("PACF")
-grid on
+parcorr(table)
 
+% set the title equal to the table title
 sgtitle(title)
 
 end

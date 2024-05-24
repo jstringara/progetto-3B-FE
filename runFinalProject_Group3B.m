@@ -299,22 +299,22 @@ disp(['The standard deviation of the zero rates is: ', num2str(std_zrates * 100)
 
 %% Plot ACF and PACF of the Z-Spread and C-Spread
 
-% compute the ACF and PACF of the Z-Spread
-acf_Z = autocorr(Z_spread);
-pacf_Z = parcorr(Z_spread);
-
-% compute the ACF and PACF of the C-Spread
-acf_C = autocorr(C_spread);
-pacf_C = parcorr(C_spread);
-
-% compute the ACF and PACF of the risk free rate
-acf_risk_free = autocorr(table(Daily_Future.Date, risk_free_rate, 'VariableNames', {'Date', 'Risk_Free'}));
-pacf_risk_free = parcorr(table(Daily_Future.Date, risk_free_rate, 'VariableNames', {'Date', 'Risk_Free'}));
-
 % plot the ACF and PACF
-plot_ACF_PACF(acf_Z, pacf_Z, 'Z-Spread')
-plot_ACF_PACF(acf_C, pacf_C, 'C-Spread')
-plot_ACF_PACF(acf_risk_free, pacf_risk_free, 'Risk-Free Rate')
+plot_ACF_PACF(Z_spread, 'Z-Spread')
+plot_ACF_PACF(C_spread, 'C-Spread')
+plot_ACF_PACF(table(Daily_Future.Date, risk_free_rate, 'VariableNames', {'Date', 'Risk_Free_Rate'}), 'Risk-Free Rate')
+
+%% Check that they are all integrated of order 1
+
+% check that all three are not stationary via the Augmented Dickey-Fuller test
+adf_Z = adftest(Z_spread);
+adf_C = adftest(C_spread.C_Spread);
+adf_risk_free = adftest(risk_free_rate);
+
+% check that their first differences are stationary
+adf_diff_Z = adftest(diff(Z_spread.Z_Spread));
+adf_diff_C = adftest(diff(C_spread.C_Spread));
+adf_diff_risk_free = adftest(diff(risk_free_rate));
 
 %% Compute the elapsed time
 
