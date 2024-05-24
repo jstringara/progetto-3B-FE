@@ -24,6 +24,9 @@ addpath('Preprocessed')
 addpath('Bootstrap');
 addpath('Plot');
 
+% set the python environment
+pyenv('Version', 'venv/Scripts/python.exe')
+
 %% Point 1) Bootstrap the interest rates curve for each date
 
 OIS_Data = readtable('OIS_Data.csv');
@@ -304,17 +307,21 @@ plot_ACF_PACF(Z_spread, 'Z-Spread')
 plot_ACF_PACF(C_spread, 'C-Spread')
 plot_ACF_PACF(table(Daily_Future.Date, risk_free_rate, 'VariableNames', {'Date', 'Risk_Free_Rate'}), 'Risk-Free Rate')
 
+risk_free_rate = table(Daily_Future.Date, risk_free_rate, 'VariableNames', {'Date', 'Risk_Free_Rate'});
+
 %% Check that they are all integrated of order 1
 
-% check that all three are not stationary via the Augmented Dickey-Fuller test
-adf_Z = adftest(Z_spread);
-adf_C = adftest(C_spread.C_Spread);
-adf_risk_free = adftest(risk_free_rate);
+% load the python function from the file
+ADFGLS = py.importlib.import_module('ADFGLS')
 
-% check that their first differences are stationary
-adf_diff_Z = adftest(diff(Z_spread.Z_Spread));
-adf_diff_C = adftest(diff(C_spread.C_Spread));
-adf_diff_risk_free = adftest(diff(risk_free_rate));
+% compute the ADF test for the C-Spread
+res = ADFGLS.compute_test( ...
+    py.dict(Date=py.list(C_spread.Date), C_Spread=py.list(C_spread.C_Spread)), ...
+    py.dict(Date=py.list(Z_spread.Date), Z_Spread=py.list(Z_spread.Z_Spread)), ...
+    py.dict(Date=py.list(Daily_Future.Date), Risk_Free_Rate=py.list(risk_free_rate.Risk_Free_Rate)) ...
+)
+
+disp(res)
 
 %% Compute the elapsed time
 
