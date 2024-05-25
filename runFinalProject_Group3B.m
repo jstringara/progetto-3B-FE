@@ -25,7 +25,7 @@ addpath('Bootstrap');
 addpath('Plot');
 
 % set the python environment
-pyenv('Version', 'venv/Scripts/python.exe')
+pe = pyenv('Version', 'venv/Scripts/python.exe', 'ExecutionMode', 'OutOfProcess');
 
 %% Point 1) Bootstrap the interest rates curve for each date
 
@@ -218,6 +218,9 @@ end
 
 %% Compute the Z-Spread for each bond
 
+% if the z spreads file does not exist, compute the Z-Spreads
+if ~isfile('Preprocessed/Z_Spreads.mat')
+
 % start a waitbar
 h = waitbar(0, 'Computing the Z-Spreads');
 tot = length(Bonds);
@@ -244,40 +247,49 @@ close(h);
 
 %% Compute the Z-Spread for each issuer
 
-% create a table to store the Z-Spreads
-Z_spread = table(Daily_Future.Date, zeros(size(Daily_Future.Date)), ...
-    'VariableNames', {'Date', 'Z_Spread'});
 
-total_issuers_active = zeros(height(Daily_Future), 1);
+    % create a table to store the Z-Spreads
+    Z_spread = table(Daily_Future.Date, zeros(size(Daily_Future.Date)), ...
+        'VariableNames', {'Date', 'Z_Spread'});
 
-% iterate over the fields of the struct (the issuers)
-for issuer = fields(Bonds_By_Issuer)'
-    % get the bonds of the issuer
-    bonds = Bonds_By_Issuer.(issuer{1});
-    % compute the total volume of bonds traded for each date
-    total_volume = zeros(height(Daily_Future), 1);
-    Z_spread_issuer = zeros(height(Daily_Future), 1);
-    for j = 1:length(bonds)
-        % exclude bond with code "XS0877820422" (it has NaN values)
-        if bonds{j}.Code == "XS0877820422"
-            continue
+    total_issuers_active = zeros(height(Daily_Future), 1);
+
+    % iterate over the fields of the struct (the issuers)
+    for issuer = fields(Bonds_By_Issuer)'
+        % get the bonds of the issuer
+        bonds = Bonds_By_Issuer.(issuer{1});
+        % compute the total volume of bonds traded for each date
+        total_volume = zeros(height(Daily_Future), 1);
+        Z_spread_issuer = zeros(height(Daily_Future), 1);
+        for j = 1:length(bonds)
+            % exclude bond with code "XS0877820422" (it has NaN values)
+            if bonds{j}.Code == "XS0877820422"
+                continue
+            end
+            Z_spread_issuer = Z_spread_issuer + bonds{j}.Volume .* bonds{j}.Z_Spreads;
+            total_volume = total_volume + bonds{j}.Volume .* (bonds{j}.Z_Spreads ~= 0);
         end
-        Z_spread_issuer = Z_spread_issuer + bonds{j}.Volume .* bonds{j}.Z_Spreads;
-        total_volume = total_volume + bonds{j}.Volume .* (bonds{j}.Z_Spreads ~= 0);
+        % normalize the Z-Spreads of the issuer by the total volume
+        Z_spread_issuer = Z_spread_issuer ./ total_volume;
+        % fill the NaN values (no bonds traded)
+        Z_spread_issuer(isnan(Z_spread_issuer)) = 0;
+        % add the Z-Spreads to the table
+        Z_spread.Z_Spread = Z_spread.Z_Spread + Z_spread_issuer;
+        % add the number of active issuers
+        total_issuers_active = total_issuers_active + (total_volume ~= 0);
     end
-    % normalize the Z-Spreads of the issuer by the total volume
-    Z_spread_issuer = Z_spread_issuer ./ total_volume;
-    % fill the NaN values (no bonds traded)
-    Z_spread_issuer(isnan(Z_spread_issuer)) = 0;
-    % add the Z-Spreads to the table
-    Z_spread.Z_Spread = Z_spread.Z_Spread + Z_spread_issuer;
-    % add the number of active issuers
-    total_issuers_active = total_issuers_active + (total_volume ~= 0);
-end
 
-% normalize the Z-Spreads by the number of issuers
-Z_spread.Z_Spread = Z_spread.Z_Spread ./ total_issuers_active;
-Z_spread.Z_Spread(isnan(Z_spread.Z_Spread)) = 0;
+    % normalize the Z-Spreads by the number of issuers
+    Z_spread.Z_Spread = Z_spread.Z_Spread ./ total_issuers_active;
+    Z_spread.Z_Spread(isnan(Z_spread.Z_Spread)) = 0;
+
+    % save the Z-Spreads
+    save('Preprocessed/Z_Spreads.mat', 'Z_spread');
+
+else
+    % load the Z-Spreads
+    load('Preprocessed/Z_Spreads.mat');
+end
 
 %% Plot the Z-Spread
 
@@ -294,34 +306,81 @@ disp(['The standard deviation of the Z-Spread is: ', num2str(std_Z_spread * 100)
 
 %% Meand and Variance for the interest rates (only on dates before 2021)
 
-mean_zrates = mean(risk_free_rate(dates_common(:,1) < datetime(2021, 1, 1)));
-std_zrates = std(risk_free_rate(dates_common(:,1) < datetime(2021, 1, 1)));
+% take the 3M interest rate
+risk_free_rate = zrates_common(:,7);
+risk_free_rate = table(Daily_Future.Date, risk_free_rate, 'VariableNames', {'Date', 'Risk_Free_Rate'});
 
-disp(['The mean of the zero rates is: ', num2str(mean_zrates * 100), '%']);
-disp(['The standard deviation of the zero rates is: ', num2str(std_zrates * 100), '%']);
+% mean_zrates = mean(risk_free_rate(dates_common(:,1) < datetime(2021, 1, 1)));
+% std_zrates = std(risk_free_rate(dates_common(:,1) < datetime(2021, 1, 1)));
+
+% disp(['The mean of the zero rates is: ', num2str(mean_zrates * 100), '%']);
+% disp(['The standard deviation of the zero rates is: ', num2str(std_zrates * 100), '%']);
+
+%% Limit the data to the dates before 2021
+
+C_spread = C_spread(C_spread.Date < datetime(2021, 1, 1), :);
+Z_spread = Z_spread(Z_spread.Date < datetime(2021, 1, 1), :);
+risk_free_rate = risk_free_rate(dates_common(:,1) < datetime(2021, 1, 1), :);
 
 %% Plot ACF and PACF of the Z-Spread and C-Spread
 
 % plot the ACF and PACF
-plot_ACF_PACF(Z_spread, 'Z-Spread')
-plot_ACF_PACF(C_spread, 'C-Spread')
-plot_ACF_PACF(table(Daily_Future.Date, risk_free_rate, 'VariableNames', {'Date', 'Risk_Free_Rate'}), 'Risk-Free Rate')
-
-risk_free_rate = table(Daily_Future.Date, risk_free_rate, 'VariableNames', {'Date', 'Risk_Free_Rate'});
+% plot_ACF_PACF(Z_spread, 'Z-Spread')
+% plot_ACF_PACF(C_spread, 'C-Spread')
+% plot_ACF_PACF(risk_free_rate, 'Risk-Free Rate')
 
 %% Check that they are all integrated of order 1
 
 % load the python function from the file
-ADFGLS = py.importlib.import_module('ADFGLS')
+econometrics = py.importlib.import_module('econometrics');
 
 % compute the ADF test for the C-Spread
-res = ADFGLS.compute_test( ...
+res = econometrics.compute_ADF( ...
     py.dict(Date=py.list(C_spread.Date), C_Spread=py.list(C_spread.C_Spread)), ...
     py.dict(Date=py.list(Z_spread.Date), Z_Spread=py.list(Z_spread.Z_Spread)), ...
-    py.dict(Date=py.list(Daily_Future.Date), Risk_Free_Rate=py.list(risk_free_rate.Risk_Free_Rate)) ...
-)
+    py.dict(Date=py.list(C_spread.Date), Risk_Free_Rate=py.list(risk_free_rate.Risk_Free_Rate)) ...
+);
 
 disp(res)
+
+%% Johansen Test to find cointegratin between these three
+
+Y = table( ...
+    C_spread.Date, ...
+    C_spread.C_Spread, ...
+    Z_spread.Z_Spread, ...
+    risk_free_rate.Risk_Free_Rate, ...
+    'VariableNames', {'Date', 'C_Spread', 'Z_Spread', 'Risk_Free_Rate'} ...
+);
+
+% Johansen test
+[~,~,stat] = jcitest([Y.C_Spread, Y.Z_Spread, Y.Risk_Free_Rate], Test=["trace" "maxeig"], Display="summary");
+
+
+%% Compute the Cointegration between the Z-Spread and the C-Spread
+
+rank = 1;
+lags = 1;
+
+% create the VECM model
+vecmModel = vecm(width(Y)-1, lags, rank);
+
+% Estimate the VECM model
+vecmModel = estimate(vecmModel, [Y.C_Spread, Y.Z_Spread, Y.Risk_Free_Rate]);
+
+% Extract the cointegration coefficients
+cointegrationCoeff = vecmModel.Cointegration;
+
+% normalize by the first coefficient
+cointegrationCoeff = cointegrationCoeff / cointegrationCoeff(1);
+
+% Display the cointegration coefficients
+disp('Cointegration Coefficients:');
+disp(cointegrationCoeff);
+
+%% Terminate the python environment
+
+pe.terminate;
 
 %% Compute the elapsed time
 
