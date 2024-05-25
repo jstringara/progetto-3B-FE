@@ -1,12 +1,10 @@
+# ADF GLS Test
 from arch.unitroot import DFGLS
+# Johansen Test
+from statsmodels.tsa.vector_ar.vecm import coint_johansen
 import pandas as pd
 
-# # load the c-spread from the csv
-# C_Spread = pd.read_csv('C_Spread.csv', parse_dates=['Date'])
-# Z_Spread = pd.read_csv('Z_Spread.csv', parse_dates=['Date'])
-# risk_free = pd.read_csv('Risk_Free_Rate.csv', parse_dates=['Date'])
-
-def compute_test(C_Spread_dict, Z_Spread_dict, risk_free_dict):
+def compute_ADF(C_Spread_dict, Z_Spread_dict, risk_free_dict):
     """
     This function computes the ADF GLS test for the C-Spread, Z-Spread, and Risk-Free Rate.
     """
