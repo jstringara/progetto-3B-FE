@@ -22,6 +22,7 @@ rng(42) % the answer to everything in the universe
 addpath('Data');
 addpath('Preprocessed')
 addpath('Bootstrap');
+addpath('Python');
 addpath('Plot');
 
 % set the python environment
@@ -71,7 +72,7 @@ grouping = [
     3*ones(height(Front_December),1)
 ];
 
-% plot_Volumes_fronts_months(Volumes_fronts_months, grouping)
+plot_Volumes_fronts_months(Volumes_fronts_months, grouping)
 
 % boxplot of the December front and next
 
@@ -91,7 +92,7 @@ grouping = [
     2*ones(height(Next_2_December),1)
 ];
 
-% plot_Volumes_december(Volumes_dec, grouping)
+plot_Volumes_december(Volumes_dec, grouping)
 
 %% Point 3) compute the C-Spread for the EUA futures
 
@@ -332,7 +333,7 @@ risk_free_rate = risk_free_rate(dates_common(:,1) < datetime(2021, 1, 1), :);
 %% Check that they are all integrated of order 1
 
 % load the python function from the file
-econometrics = py.importlib.import_module('econometrics');
+econometrics = py.importlib.import_module('Python.econometrics');
 
 % compute the ADF test for the C-Spread
 res = econometrics.compute_ADF( ...
@@ -367,6 +368,8 @@ vecmModel = vecm(width(Y)-1, lags, rank);
 
 % Estimate the VECM model
 vecmModel = estimate(vecmModel, [Y.C_Spread, Y.Z_Spread, Y.Risk_Free_Rate]);
+
+vecmModel.summarize()
 
 % Extract the cointegration coefficients
 cointegrationCoeff = vecmModel.Cointegration;
