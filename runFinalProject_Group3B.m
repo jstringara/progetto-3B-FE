@@ -376,7 +376,7 @@ cointegrationCoeff = cointegrationCoeff / cointegrationCoeff(1);
 
 % Display the cointegration coefficients
 disp('Cointegration Coefficients:');
-disp(cointegrationCoeff);
+disp(cointegrationCoeff');
 
 %% Terminate the python environment
 
