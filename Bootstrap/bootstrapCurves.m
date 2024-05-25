@@ -20,10 +20,8 @@ t0 = OIS_Data.Date;
 offsets = [calweeks(0:3), calmonths(1:11), calmonths(12:3:21), calyears(2:10)];
 dates = NaT(length(t0), length(offsets));
 
-% for each date create the corresponding row of the dates matrix
-for i = 1:length(dates)
-    dates(i,:) = t0(i) + offsets;
-end
+dates = repmat(t0, 1, length(offsets));
+dates = dates + repmat(offsets, length(t0), 1);
 
 % move to business days
 quoted_dates = dates(:,2:end);
