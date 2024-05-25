@@ -33,9 +33,7 @@ dates(:,2:end) = quoted_dates;
 
 % compute the yearfractions (European 30/360 convention)
 yf = zeros(length(t0), length(offsets)-1);
-for i = 1:length(t0)
-    yf(i,:) = yearfrac(t0(i), dates(i,2:end), EU_30_360);
-end
+yf = yearfrac(repmat(t0, 1, length(offsets)-1), dates(:,2:end), EU_30_360);
 
 % compute the discounts factors curve for each date
 DF = zeros(length(t0), length(offsets)-1);
@@ -44,17 +42,17 @@ DF = zeros(length(t0), length(offsets)-1);
 DF(:,1:15) = 1./(1 + OIS_Data{:,2:16} .* yf(:,1:15));
 
 % cases between 1 and 2 years
-delta_3m = yearfrac(dates(:,7), dates(:,17), EU_30_360); %delta between 3m and 15m
-delta_6m = yearfrac(dates(:,10), dates(:,18), EU_30_360); %delta between 6m and 18m
-delta_9m = yearfrac(dates(:,13), dates(:,19), EU_30_360); %delta between 9m and 21m
+delta_3m = yf(:,16) - yf(:,6); %delta between 3m and 15m
+delta_6m = yf(:,17) - yf(:,9); %delta between 6m and 18m
+delta_9m = yf(:,18) - yf(:,12); %delta between 9m and 21m
 % compute the discounts factors by taking into account the previous paid ones
 DF(:,16)=(1-OIS_Data{:,17}.*yf(:,6).*DF(:,6))./(1+delta_3m.*OIS_Data{:,17});
 DF(:,17)=(1-OIS_Data{:,18}.*yf(:,9).*DF(:,9))./(1+delta_6m.*OIS_Data{:,18});
 DF(:,18)=(1-OIS_Data{:,19}.*yf(:,12).*DF(:,12))./(1+delta_9m.*OIS_Data{:,19});
 
 % compute the relevant dates and yf for the yearly swaps
-dates_1y = dates(:, [1,16,20:28]);
-delta_fwd_1y = yearfrac(dates_1y(:, 1:end-1), dates_1y(:,2:end), EU_30_360);
+delta_yearly = [zeros(length(yf),1), yf(:, [15, 19:end])];
+delta_fwd_1y = delta_yearly(:,2:end) - delta_yearly(:,1:end-1);
 
 % initialize the sum for 1y
 S = delta_fwd_1y(:,1) .* DF(:,15);
@@ -68,13 +66,8 @@ for j = 19:length(offsets)-1
     S = S + delta_fwd_1y(:,j-17) .* DF(:,j);
 end
 
-% TODO questo ciclo passa per tutti gli indici che deve visitare? Quel -17 è corretto?
-
 % finally compute the zero rates
-delta_rates = zeros(length(t0), length(offsets)-1);
-for i = 1:length(t0)
-    delta_rates(i,:) = yearfrac(t0(i), dates(i,2:end), ACT_365);
-end
+delta_rates = yearfrac(repmat(t0, 1, length(offsets)-1), dates(:,2:end), ACT_365);
 
 zero_rates = -log(DF)./delta_rates;
 
