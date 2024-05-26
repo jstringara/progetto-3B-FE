@@ -20,6 +20,7 @@ rng(42) % the answer to everything in the universe
 %% Add the directories to the path
 
 addpath('Data');
+addpath('Preprocessing');
 addpath('Preprocessed')
 addpath('Bootstrap');
 addpath('Python');
@@ -30,20 +31,7 @@ pe = pyenv('Version', 'venv/Scripts/python.exe', 'ExecutionMode', 'OutOfProcess'
 
 %% Point 1) Bootstrap the interest rates curve for each date
 
-OIS_Data = readtable('OIS_Data.csv');
-
-% convert the dates to datetime
-OIS_Data.Date = OIS_Data.Date + calyears(2000);
-
-% fill with previous day and then remove rows with nans
-OIS_Data = fillmissing(OIS_Data, 'previous');
-OIS_Data = rmmissing(OIS_Data);
-
-% remove duplicate based on the date
-OIS_Data = unique(OIS_Data);
-
-% Put the rates into percentages
-OIS_Data{:,2:end} = OIS_Data{:,2:end} / 100;
+OIS_Data = preprocess_OIS('OIS_Data.csv');
 
 % bootstrap the curves
 [dates, DF, zrates] = bootstrapCurves(OIS_Data);
@@ -72,7 +60,7 @@ grouping = [
     3*ones(height(Front_December),1)
 ];
 
-plot_Volumes_fronts_months(Volumes_fronts_months, grouping)
+% plot_Volumes_fronts_months(Volumes_fronts_months, grouping)
 
 % boxplot of the December front and next
 
@@ -92,7 +80,7 @@ grouping = [
     2*ones(height(Next_2_December),1)
 ];
 
-plot_Volumes_december(Volumes_dec, grouping)
+% plot_Volumes_december(Volumes_dec, grouping)
 
 %% Point 3) compute the C-Spread for the EUA futures
 
@@ -294,7 +282,7 @@ end
 
 %% Plot the Z-Spread
 
-plot_C_Z_r(C_spread, Z_spread, risk_free_rate)
+% plot_C_Z_r(C_spread, Z_spread, risk_free_rate)
 
 %% Mean and Variance of the Z-Spread (only on dates before 2021)
 
@@ -354,32 +342,125 @@ Y = table( ...
     'VariableNames', {'Date', 'C_Spread', 'Z_Spread', 'Risk_Free_Rate'} ...
 );
 
-% Johansen test
-[~,~,stat] = jcitest([Y.C_Spread, Y.Z_Spread, Y.Risk_Free_Rate], Test=["trace" "maxeig"], Display="summary");
+Y_mat = [Y.C_Spread, Y.Z_Spread, Y.Risk_Free_Rate];
 
+% Johansen test
+[h,pValue,stat,cValue,mles] = jcitest(Y_mat, ...
+    Test=["trace" "maxeig"], Display="summary", Model="H2");
+
+params = mles.r1.paramVals;
+B = params.B;
+
+% nomalize
+B = B / B(1);
+
+% write and plot the cointegration vectors
+disp(B')
+
+ect = Y_mat * B;
+
+% test the stationarity of the error correction term
+%[h,pValue,stat,cValue,mles] = adftest(ect, 'Display', 'summary');
 
 %% Compute the Cointegration between the Z-Spread and the C-Spread
 
-rank = 1;
-lags = 1;
+% build the lagged difference of the C-Spread
+Delta_C = diff(C_spread.C_Spread);
 
-% create the VECM model
-vecmModel = vecm(width(Y)-1, lags, rank);
+plot_ACF_PACF(Delta_C, 'Delta_C')
 
-% Estimate the VECM model
-vecmModel = estimate(vecmModel, [Y.C_Spread, Y.Z_Spread, Y.Risk_Free_Rate]);
+%% Error correction model
 
-vecmModel.summarize()
+Delta_Z = diff(Z_spread.Z_Spread);
+Delta_r = diff(risk_free_rate.Risk_Free_Rate);
 
-% Extract the cointegration coefficients
-cointegrationCoeff = vecmModel.Cointegration;
+% lagged values of Delta_C
+Delta_C_lag1 = lagmatrix(Delta_C, 1);
+Delta_C_lag2 = lagmatrix(Delta_C, 2);
+Delta_C_lag3 = lagmatrix(Delta_C, 3);
 
-% normalize by the first coefficient
-cointegrationCoeff = cointegrationCoeff / cointegrationCoeff(1);
+% lagged value of ect
+ect_lag1 = lagmatrix(ect, 1);
 
-% Display the cointegration coefficients
-disp('Cointegration Coefficients:');
-disp(cointegrationCoeff');
+% load the extra variables
+extra_variables = readtable('Extra_Variables.csv');
+
+% transform the dates into datetime
+% format is weekday full name, month full name day, full year
+date_format = 'eeee, MMMM d, yyyy';
+extra_variables.Date = string(extra_variables.Date);
+extra_variables.Date = datetime(extra_variables.Date, 'InputFormat', date_format);
+
+% filter them by the dates to match the other variables
+extra_variables = extra_variables(ismember(extra_variables.Date, C_spread.Date), :);
+
+% keep only the columns 'SPX', 'VIX', 'WTI'
+extra_variables = extra_variables(:, {'Date', 'SPX', 'VIX', 'WTI'});
+
+% fill the missing values with the previous value
+extra_variables = fillmissing(extra_variables, 'previous');
+
+%% GARCh(1,1) model for the variance of the log return of the spot price of the EUA futures
+
+% build a GARCH(1,1) model for the variance of the log return of the spot price
+% of the EUA futures
+
+% take the log return of the spot price
+log_returns = log(Daily_Future.Price(2:end) ./ Daily_Future.Price(1:end-1));
+
+% fit the GARCH(1,1) model
+mdl = garch(1,1);
+
+% estimate the parameters
+estMdl = estimate(mdl, log_returns);
+
+% simulate the variance
+numObs = length(log_returns);
+
+% simulate the variance
+v = simulate(estMdl, numObs, 'NumPaths', 1);
+
+% plot the variance
+figure;
+plot(Daily_Future.Date(2:end), v, 'LineWidth', 1.5)
+hold on
+plot(Daily_Future.Date(2:end), log_returns.^2, 'LineWidth', 1.5)
+title('Simulated Variance of the Log Returns of the EUA Futures')
+legend('Simulated Variance', 'Realized Variance')
+xlabel('Date')
+
+%% Error correction model
+
+% build the table with the variables
+Y = table( ...
+    Delta_C, ...
+    Delta_C_lag1, ...
+    Delta_C_lag2, ...
+    Delta_C_lag3, ...
+    ect_lag1(2:end), ...
+    Delta_Z, ...
+    Delta_r, ...
+    log(extra_variables.SPX(2:end) ./ extra_variables.SPX(1:end-1)), ...
+    extra_variables.VIX(2:end), ...
+    log(extra_variables.WTI(2:end) ./ extra_variables.WTI(1:end-1)), ...
+    'VariableNames', { 'Delta_C', 'Delta_C_lag1', 'Delta_C_lag2', 'Delta_C_lag3', ...
+    'ect_lag1', 'Delta_Z', 'Delta_r', 'log_SPX', 'VIX', 'log_WTI'} ...
+);
+
+% remove nan values
+Y = rmmissing(Y);
+
+% build the x matrix
+x = [ones(size(Y,1),1), table2array(Y(:,2:end))];
+% take only the real values
+x = real(x);
+y = Y.Delta_C;
+
+% fit the model
+mdl = fitlm(x, y);
+
+% display the results
+disp(mdl)
 
 %% Terminate the python environment
 
