@@ -1,12 +1,10 @@
 import os
 import datetime
 import pandas as pd
-import numpy as np
-from scipy.optimize import fsolve
 from scipy.io import savemat
 
 # import the Bond class from the bond.py file
-from Python.bond import Bond
+from bond import Bond
 
 def preprocess_Volumes_front_Month(month:str, save:bool = True)->pd.DataFrame:
     """
@@ -88,7 +86,8 @@ def preprocess_December(years_offset:int = 0, save:bool = True)->pd.DataFrame:
     front_Dec = pd.DataFrame()
     prev_date = datetime.datetime(2013, 1, 2) # only dates after this date will be considered
 
-    for year in range(2013, 2022):
+    # for year in range(2013, 2022): # original range
+    for year in range(2013, 2023):
 
         # find the last quoted date
         file_name = f'ICE_FUT_{str(year)[-2:]}.csv'

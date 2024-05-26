@@ -9,7 +9,8 @@ class Bond:
     __unfound_info = []
     # class attribute (we only want data for Phase III)
     __start_date = datetime.datetime(2013, 1, 1)
-    __end_date = datetime.datetime(2021, 12, 31)
+    # __end_date = datetime.datetime(2021, 12, 31) # Phase III
+    __end_date = datetime.datetime(2022, 12, 31)
 
     def __init__(self, code, coupon_rate, maturity_date, coupon_frequency, volume, issuer):
         """
@@ -35,8 +36,6 @@ class Bond:
         self.__first_quote = self.__find_first_quote()
         # compute the coupons 
         self.__coupon_dates = self.__compute_coupon_dates()
-
-        # TODO: add the year fractions along with the prices or coupons
 
         # if no data was found, add it to the list of unfound bonds
         if self.__data.empty:
