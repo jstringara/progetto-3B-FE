@@ -43,7 +43,7 @@ def preprocess_Volumes_front_Month(month:str, save:bool = True)->pd.DataFrame:
     prev_date = datetime.datetime(2013, 1, 1) # only dates after this date will be considered
     Volumes_march = pd.DataFrame()
 
-    for year in range(2013, 2022):
+    for year in range(2013, 2022+1):
         # find the corresponding column
         col_name = list(filter(lambda x: str(year) in x, column_names))[0]
         # find the last quoted date as the last date where there is a value in the column
