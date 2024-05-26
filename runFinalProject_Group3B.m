@@ -398,12 +398,16 @@ extra_variables = extra_variables(ismember(extra_variables.Date, C_spread.Date),
 extra_variables = extra_variables(:, {'Date', 'SPX', 'VIX', 'WTI'});
 
 % fill the missing values with the previous value
+% HACK: there was a negative price for the WTI, we manually set it to NaN
 extra_variables = fillmissing(extra_variables, 'previous');
 
 %% GARCh(1,1) model for the variance of the log return of the spot price of the EUA futures
 
 % build a GARCH(1,1) model for the variance of the log return of the spot price
 % of the EUA futures
+
+% filter the Daily_Future to match the dates of the extra variables
+Daily_Future = Daily_Future(ismember(Daily_Future.Date, extra_variables.Date), :);
 
 % take the log return of the spot price
 log_returns = log(Daily_Future.Price(2:end) ./ Daily_Future.Price(1:end-1));
@@ -412,13 +416,16 @@ log_returns = log(Daily_Future.Price(2:end) ./ Daily_Future.Price(1:end-1));
 mdl = garch(1,1);
 
 % estimate the parameters
-estMdl = estimate(mdl, log_returns);
+estMdl = estimate(mdl, log_returns(2:end), E0=log_returns(1));
 
 % simulate the variance
 numObs = length(log_returns);
 
-% simulate the variance
-v = simulate(estMdl, numObs, 'NumPaths', 1);
+% simulate the unconditional variance
+v = simulate(estMdl, numObs, 'NumPaths', 1000);
+
+% take the mean of the simulated variance
+v = mean(v, 2);
 
 % plot the variance
 figure;
@@ -433,34 +440,33 @@ xlabel('Date')
 
 % build the table with the variables
 Y = table( ...
-    Delta_C, ...
     Delta_C_lag1, ...
     Delta_C_lag2, ...
     Delta_C_lag3, ...
-    ect_lag1(2:end), ...
     Delta_Z, ...
     Delta_r, ...
+    ect_lag1(2:end), ...
+    log(extra_variables.WTI(2:end) ./ extra_variables.WTI(1:end-1)), ...
     log(extra_variables.SPX(2:end) ./ extra_variables.SPX(1:end-1)), ...
     extra_variables.VIX(2:end), ...
-    log(extra_variables.WTI(2:end) ./ extra_variables.WTI(1:end-1)), ...
-    'VariableNames', { 'Delta_C', 'Delta_C_lag1', 'Delta_C_lag2', 'Delta_C_lag3', ...
-    'ect_lag1', 'Delta_Z', 'Delta_r', 'log_SPX', 'VIX', 'log_WTI'} ...
+    v, ...
+    Delta_C, ...
+    'VariableNames', {'Delta_C_lag1', 'Delta_C_lag2', 'Delta_C_lag3', ...
+    'Delta_Z', 'Delta_r', 'ect_lag1', 'log_WTI', 'log_SPX', 'VIX', 'Variance', 'Delta_C' } ...
 );
 
 % remove nan values
 Y = rmmissing(Y);
 
-% build the x matrix
-x = [ones(size(Y,1),1), table2array(Y(:,2:end))];
-% take only the real values
-x = real(x);
-y = Y.Delta_C;
-
 % fit the model
-mdl = fitlm(x, y);
+mdl = fitlm(Y, 'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + log_WTI + log_SPX + VIX + Variance');
 
-% display the results
-disp(mdl)
+% get the AIC and BIC
+AIC = mdl.ModelCriterion.AIC;
+
+%% Point 9
+
+
 
 %% Terminate the python environment
 
