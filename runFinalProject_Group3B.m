@@ -29,9 +29,16 @@ addpath('Plot');
 % set the python environment
 pe = pyenv('Version', 'venv/Scripts/python.exe', 'ExecutionMode', 'OutOfProcess');
 
-%% Point 1) Bootstrap the interest rates curve for each date
+%% Preprocces and data loading
 
+% load the OIS data
 OIS_Data = preprocess_OIS('OIS_Data.csv');
+
+% load the Next 
+Next_December = readtable('Next_December.csv');
+Next_2_December = readtable('Next_2_December.csv');
+
+%% Point 1) Bootstrap the interest rates curve for each date
 
 % bootstrap the curves
 [dates, DF, zrates] = bootstrapCurves(OIS_Data);
@@ -64,9 +71,6 @@ grouping = [
 
 % boxplot of the December front and next
 
-% load the preprocessed data
-Next_December = readtable('Next_December.csv');
-Next_2_December = readtable('Next_2_December.csv');
 
 Volumes_dec = [
     Front_December.Volume;
@@ -241,6 +245,7 @@ close(h);
     Z_spread = table(Daily_Future.Date, zeros(size(Daily_Future.Date)), ...
         'VariableNames', {'Date', 'Z_Spread'});
 
+  
     total_issuers_active = zeros(height(Daily_Future), 1);
 
     % iterate over the fields of the struct (the issuers)
@@ -286,8 +291,12 @@ end
 
 %% Mean and Variance of the Z-Spread (only on dates before 2021)
 
-mean_Z_spread = mean(Z_spread.Z_Spread(Z_spread.Date < datetime(2021, 1, 1)));
-std_Z_spread = std(Z_spread.Z_Spread(Z_spread.Date < datetime(2021, 1, 1)));
+%mean_Z_spread = mean(Z_spread.Z_Spread(Z_spread.Date < datetime(2021, 1, 1)));
+%std_Z_spread = std(Z_spread.Z_Spread(Z_spread.Date < datetime(2021, 1, 1)));
+
+%% Mean and Variance of the Z-Spread (only on dates before 2022)
+mean_Z_spread = mean(Z_spread.Z_Spread(Z_spread.Date < datetime(2022, 1, 1)));
+std_Z_spread = std(Z_spread.Z_Spread(Z_spread.Date < datetime(2022, 1, 1)));
 
 % display the results
 disp(['The mean of the Z-Spread is: ', num2str(mean_Z_spread * 100), '%']);
@@ -307,9 +316,15 @@ risk_free_rate = table(Daily_Future.Date, risk_free_rate, 'VariableNames', {'Dat
 
 %% Limit the data to the dates before 2021
 
-C_spread = C_spread(C_spread.Date < datetime(2021, 1, 1), :);
-Z_spread = Z_spread(Z_spread.Date < datetime(2021, 1, 1), :);
-risk_free_rate = risk_free_rate(dates_common(:,1) < datetime(2021, 1, 1), :);
+%C_spread = C_spread(C_spread.Date < datetime(2021, 1, 1), :);
+%Z_spread = Z_spread(Z_spread.Date < datetime(2021, 1, 1), :);
+%risk_free_rate = risk_free_rate(dates_common(:,1) < datetime(2021, 1, 1), :);
+
+%% Limit the data to the dates before October 2022
+
+C_spread = C_spread(C_spread.Date <= datetime(2022,10,31), :);
+Z_spread = Z_spread(Z_spread.Date <= datetime(2022,10,31), :);
+risk_free_rate = risk_free_rate(dates_common(:, 1) < datetime(2022, 10, 31), :);
 
 %% Plot ACF and PACF of the Z-Spread and C-Spread
 
@@ -334,6 +349,10 @@ disp(res)
 
 %% Johansen Test to find cointegratin between these three
 
+% C_spread.C_Spread = C_spread.C_Spread(Z_spread.Date);
+% risk_free_rate.Risk_Free_Rate = risk_free_rate.Risk_Free_Rate(Z_spread.Date);
+% C_spread.Date = C_spread.Date(Z_spread.Date);
+% risk_free_rate.Date = risk_free_rate.Date(Z_spread.Date);
 Y = table( ...
     C_spread.Date, ...
     C_spread.C_Spread, ...
@@ -429,11 +448,31 @@ v = mean(v, 2);
 
 % plot the variance
 figure;
-plot(Daily_Future.Date(2:end), v, 'LineWidth', 1.5)
-hold on
 plot(Daily_Future.Date(2:end), log_returns.^2, 'LineWidth', 1.5)
+hold on
+plot(Daily_Future.Date(2:end), v, 'LineWidth', 1.5)
 title('Simulated Variance of the Log Returns of the EUA Futures')
-legend('Simulated Variance', 'Realized Variance')
+legend('Realized Variance', 'GARCH(1,1) Variance')
+xlabel('Date')
+
+%% EWMA model
+
+% compute the EWMA
+lambda = 0.95;
+v_ewma = zeros(length(log_returns), 1);
+v_ewma(1) = var(log_returns);
+
+for i = 2:length(log_returns)
+    v_ewma(i) = lambda * v_ewma(i-1) + (1 - lambda) * log_returns(i)^2;
+end
+
+% plot the variance
+figure;
+plot(Daily_Future.Date(2:end), log_returns.^2, 'LineWidth', 1.5)
+hold on
+plot(Daily_Future.Date(2:end), v_ewma, 'LineWidth', 1.5)
+title('EWMA Variance of the Log Returns of the EUA Futures')
+legend('Realized Variance', 'EWMA Variance')
 xlabel('Date')
 
 %% Error correction model
@@ -450,23 +489,45 @@ Y = table( ...
     log(extra_variables.SPX(2:end) ./ extra_variables.SPX(1:end-1)), ...
     extra_variables.VIX(2:end), ...
     v, ...
+    v_ewma, ...
     Delta_C, ...
-    'VariableNames', {'Delta_C_lag1', 'Delta_C_lag2', 'Delta_C_lag3', ...
-    'Delta_Z', 'Delta_r', 'ect_lag1', 'log_WTI', 'log_SPX', 'VIX', 'Variance', 'Delta_C' } ...
+    'VariableNames', {'Delta_C_lag1', 'Delta_C_lag2', 'Delta_C_lag3', 'Delta_Z', 'Delta_r', ...
+    'ect_lag1', 'log_WTI', 'log_SPX', 'VIX', 'GARCH', 'EWMA', 'Delta_C' } ...
 );
 
 % remove nan values
 Y = rmmissing(Y);
 
+%% Model with the GARCH variance
+
 % fit the model
-mdl = fitlm(Y, 'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + log_WTI + log_SPX + VIX + Variance');
+mdl = fitlm(Y, ...
+'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + log_WTI + log_SPX + VIX + GARCH', ...
+'Intercept', false);
+
+% print the summary
+disp(mdl)
 
 % get the AIC and BIC
 AIC = mdl.ModelCriterion.AIC;
+BIC = mdl.ModelCriterion.BIC;
 
-%% Point 9
+%% Model with the EWMA variance
 
+disp(['The AIC of the model is: ', num2str(AIC)]);
+disp(['The BIC of the model is: ', num2str(BIC)]);
+mdl = fitlm(Y, ...
+'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + log_WTI + log_SPX + VIX + EWMA', ...
+'Intercept', false);
 
+disp(mdl)
+
+% get the AIC and BIC
+AIC = mdl.ModelCriterion.AIC;
+BIC = mdl.ModelCriterion.BIC;
+
+disp(['The AIC of the model with EWMA is: ', num2str(AIC)]);
+disp(['The BIC of the model with EWMA is: ', num2str(BIC)]);
 
 %% Terminate the python environment
 
