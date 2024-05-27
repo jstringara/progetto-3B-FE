@@ -265,7 +265,7 @@ risk_free_rate = risk_free_rate(dates(:,1) < datetime(2021, 1, 1), :);
 % 
 % disp(res)
 
-%% Johansen Test to find cointegratin between these three
+%% Johansen Test to find cointegration between these three
 
 % C_spread.C_Spread = C_spread.C_Spread(Z_spread.Date);
 % risk_free_rate.Risk_Free_Rate = risk_free_rate.Risk_Free_Rate(Z_spread.Date);
