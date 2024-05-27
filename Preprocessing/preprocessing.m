@@ -39,3 +39,6 @@ new_OIS_Data = fillmissing(new_OIS_Data, 'previous');
 
 % merge the data
 OIS_Data = new_OIS_Data;
+
+% preprocess the bonds data
+Bonds = preprocessBonds(phase_III_dates(1), phase_III_dates(2));
