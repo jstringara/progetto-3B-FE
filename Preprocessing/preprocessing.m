@@ -11,4 +11,9 @@ Volumes_march_front = preprocessVolumesMonth('March', phase_III_dates(1), phase_
 Volumes_june_front = preprocessVolumesMonth('June', phase_III_dates(1), phase_III_dates(2));
 Volumes_sept_front = preprocessVolumesMonth('September', phase_III_dates(1), phase_III_dates(2));
 
-% preprocess the 
+% preprocess the December data
+Front_December = preprocessDecember(0, phase_III_dates(1), phase_III_dates(2));
+Next_December = preprocessDecember(1, phase_III_dates(1), phase_III_dates(2));
+Next_2_December = preprocessDecember(2, phase_III_dates(1), phase_III_dates(2));
+
+% read the daily future
