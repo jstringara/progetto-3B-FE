@@ -26,6 +26,7 @@ addpath('Bootstrap');
 addpath('Spreads');
 addpath('Python');
 addpath('Plot');
+addpath('QR');
 
 % set the python environment
 %pe = pyenv('Version', 'venv/Scripts/python.exe', 'ExecutionMode', 'OutOfProcess');
@@ -88,7 +89,7 @@ C_spread_next = compute_C_Spread(Next_December, Daily_Future, risk_free_rate);
 
 %% Plot the two C-Spreads
 
-% plot_C_front_next(C_spread_front, C_spread_next)
+plot_C_front_next(C_spread_front, C_spread_next)
 
 %% Point 3.b) Compute a single C_spread time series with a roll-over rule
 
@@ -121,6 +122,68 @@ for i = 1:length(years)
     % update the previous date
     prev_date = expiry_front;
 end
+
+% %% Point 9.c.ii) Compute a single C_spread time series with a roll-over rule
+% 
+% % ***: this part is not really pretty, could be put into a function but it does not make a lot of sense
+% 
+% % build a single time series of the C-Spread
+% C_spread = table(Daily_Future.Date, zeros(size(Daily_Future.Price)), ...
+%     'VariableNames', {'Date', 'C_Spread'});
+% 
+% % each year up to the 15th of November we use the front December
+% % after the 15th of November and up to the front's expiry we use the next December
+% years = unique(year(Daily_Future.Date));
+% prev_date = Front_December.Expiry(1)-calmonths(1)-calyears(1);
+% 
+% % for each year
+% for i = 1:length(years)
+%     value_year = years(i);
+%     % find the expiry for that year as the expiry with matching year
+%     expiry_front = Front_December.Expiry(year(Front_December.Date) == value_year);
+%     expiry_front = expiry_front(1);
+%     % compute the last front date (15th of November of the same year)
+%     last_front_date = expiry_front-calmonths(1);
+%     % from the previous date to the 15th of November take the front December
+%     C_spread.C_Spread(C_spread.Date >= prev_date & C_spread.Date < last_front_date) = ...
+%         C_spread_front.C_Spread(C_spread.Date >= prev_date & C_spread.Date < last_front_date);
+%     % from the 15th of November to the expiry take the next December
+%     C_spread.C_Spread(C_spread.Date >= last_front_date & C_spread.Date < expiry_front) = ...
+%         C_spread_next.C_Spread(C_spread.Date >= last_front_date & C_spread.Date < expiry_front);
+%     % update the previous date
+%     prev_date = expiry_front;
+% end
+
+%% Point 9.c.iii) Compute a single C_spread time series with a roll-over rule
+
+% % ***: this part is not really pretty, could be put into a function but it does not make a lot of sense
+% 
+% % build a single time series of the C-Spread
+% C_spread = table(Daily_Future.Date, zeros(size(Daily_Future.Price)), ...
+%     'VariableNames', {'Date', 'C_Spread'});
+% 
+% % each year up to the 15th of November we use the front December
+% % after the 15th of November and up to the front's expiry we use the next December
+% years = unique(year(Daily_Future.Date));
+% prev_date = Front_December.Expiry(1)-calweeks(1)-calyears(1);
+% 
+% % for each year
+% for i = 1:length(years)
+%     value_year = years(i);
+%     % find the expiry for that year as the expiry with matching year
+%     expiry_front = Front_December.Expiry(year(Front_December.Date) == value_year);
+%     expiry_front = expiry_front(1);
+%     % compute the last front date (15th of November of the same year)
+%     last_front_date = expiry_front-calweeks(1);
+%     % from the previous date to the 15th of November take the front December
+%     C_spread.C_Spread(C_spread.Date >= prev_date & C_spread.Date < last_front_date) = ...
+%         C_spread_front.C_Spread(C_spread.Date >= prev_date & C_spread.Date < last_front_date);
+%     % from the 15th of November to the expiry take the next December
+%     C_spread.C_Spread(C_spread.Date >= last_front_date & C_spread.Date < expiry_front) = ...
+%         C_spread_next.C_Spread(C_spread.Date >= last_front_date & C_spread.Date < expiry_front);
+%     % update the previous date
+%     prev_date = expiry_front;
+% end
 
 %% Compute the Mean and the Standard Deviation of the C-Spread
 
@@ -163,11 +226,11 @@ disp(['The standard deviation of the Z-Spread is: ', num2str(std_Z_spread * 100)
 risk_free_rate = zrates(:,7);
 risk_free_rate = table(Daily_Future.Date, risk_free_rate, 'VariableNames', {'Date', 'Risk_Free_Rate'});
 
-% mean_zrates = mean(risk_free_rate(dates_common(:,1) < datetime(2021, 1, 1)));
-% std_zrates = std(risk_free_rate(dates_common(:,1) < datetime(2021, 1, 1)));
+mean_zrates = mean(risk_free_rate{dates(:,1) < datetime(2021, 1, 1),2});
+std_zrates = std(risk_free_rate{dates(:,1) < datetime(2021, 1, 1),2});
 
-% disp(['The mean of the zero rates is: ', num2str(mean_zrates * 100), '%']);
-% disp(['The standard deviation of the zero rates is: ', num2str(std_zrates * 100), '%']);
+disp(['The mean of the zero rates is: ', num2str(mean_zrates * 100), '%']);
+disp(['The standard deviation of the zero rates is: ', num2str(std_zrates * 100), '%']);
 
 %% Limit the data to the dates before 2021
 
@@ -330,6 +393,34 @@ title('EWMA Variance of the Log Returns of the EUA Futures')
 legend('Realized Variance', 'EWMA Variance')
 xlabel('Date')
 
+%% Pearson correlation test
+
+% X= table( ...
+%     log(extra_variables.SPX(2:end) ./ extra_variables.SPX(1:end-1)), ...    
+%     extra_variables.VIX(2:end), ...    
+%     log(extra_variables.WTI(2:end) ./ extra_variables.WTI(1:end-1)), ...
+%     v, ...
+%     'VariableNames', {'log_SPX', 'VIX','log_WTI','GARCH'} ...
+% );
+X=[log(extra_variables.SPX(2:end) ./ extra_variables.SPX(1:end-1)),extra_variables.VIX(2:end),log(extra_variables.WTI(2:end) ./ extra_variables.WTI(1:end-1)),v];
+% Verifica se ci sono valori complessi
+% hasComplexValues = false;
+% vars = X.Properties.VariableNames; % Ottiene i nomi delle variabili (colonne) della tabella
+% 
+% for i = 1:numel(vars)
+%     varData = X.(vars{i}); % Estrae i dati della colonna i
+%     if any(imag(varData(:)) ~= 0) % Controlla se ci sono parti immaginarie non zero
+%         hasComplexValues = true;
+%         fprintf('La colonna "%s" contiene valori complessi.\n', vars{i});
+%     end
+% end
+
+[cor_coeff,P_value_coeff]=corrcoef(X);
+disp(['The matrix correlation coefficients of the extravariables is:'])
+disp(cor_coeff)
+disp(['The P-values of the correlation coefficients of the extravariables is:'])
+disp(P_value_coeff)
+
 %% Error correction model
 
 % build the table with the variables
@@ -353,7 +444,7 @@ Y = table( ...
 % remove nan values
 Y = rmmissing(Y);
 
-%% Model with the GARCH variance
+%% General Model with the GARCH variance
 
 % fit the model
 mdl = fitlm(Y, ...
@@ -366,6 +457,72 @@ disp(mdl)
 % get the AIC and BIC
 AIC = mdl.ModelCriterion.AIC;
 BIC = mdl.ModelCriterion.BIC;
+
+%% Model 1 with the GARCH variance
+% fit the model
+mdl = fitlm(Y(:,[1:3,6,12]), ...
+'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + ect_lag1', ...
+'Intercept', false);
+
+% print the summary
+disp(mdl)
+
+% get the AIC and BIC
+AIC = mdl.ModelCriterion.AIC;
+BIC = mdl.ModelCriterion.BIC;
+
+%% Model 2 with the GARCH variance
+% fit the model
+mdl = fitlm(Y(:,[1:6,12]), ...
+'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r +ect_lag1', ...
+'Intercept', false);
+
+% print the summary
+disp(mdl)
+
+% get the AIC and BIC
+AIC = mdl.ModelCriterion.AIC;
+BIC = mdl.ModelCriterion.BIC;
+
+%% Model 3 with the GARCH variance
+% fit the model
+mdl = fitlm(Y(:,[7,12]), ...
+'Delta_C ~ log_WTI', ...
+'Intercept', false);
+
+% print the summary
+disp(mdl)
+
+% get the AIC and BIC
+AIC = mdl.ModelCriterion.AIC;
+BIC = mdl.ModelCriterion.BIC;
+
+%% Model 4 with the GARCH variance
+% fit the model
+mdl = fitlm(Y(:,[1:7,12]), ...
+'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r +ect_lag1 +log_WTI', ...
+'Intercept', false);
+
+% print the summary
+disp(mdl)
+
+% get the AIC and BIC
+AIC = mdl.ModelCriterion.AIC;
+BIC = mdl.ModelCriterion.BIC;
+
+%% Model 5 with the GARCH variance
+% fit the model
+mdl = fitlm(Y(:,[7:10,12]), ...
+'Delta_C ~ log_WTI + log_SPX + VIX + GARCH', ...
+'Intercept', false);
+
+% print the summary
+disp(mdl)
+
+% get the AIC and BIC
+AIC = mdl.ModelCriterion.AIC;
+BIC = mdl.ModelCriterion.BIC;
+
 
 %% Model with the EWMA variance
 
@@ -384,9 +541,38 @@ BIC = mdl.ModelCriterion.BIC;
 disp(['The AIC of the model with EWMA is: ', num2str(AIC)]);
 disp(['The BIC of the model with EWMA is: ', num2str(BIC)]);
 
-%% Terminate the python environment
+%% Quantile regression
 
-pe.terminate;
+
+y=Delta_C(4:end);
+%x=[Delta_C_lag1(4:end)];
+x=[Delta_C_lag1, ...
+    Delta_C_lag2, ...
+    Delta_C_lag3, ...
+    Delta_Z, ...
+    Delta_r, ...
+    ect_lag1(2:end), ...
+    log(extra_variables.WTI(2:end) ./ extra_variables.WTI(1:end-1)), ...
+    log(extra_variables.SPX(2:end) ./ extra_variables.SPX(1:end-1)), ...
+    extra_variables.VIX(2:end), ...
+    v];
+x=x(4:end,:);
+
+
+% [p,stats]=quantreg(x(4:100),y(4:100),0.1);
+tau=0.1;
+l=length(y);
+[ estimate,pvalue,j ] = qr_standard(x,y,tau,'test', 'kernel', 'maxit', 5000, 'tol', 1e-10)%% Terminate the python environment
+prev=estimate(1)+x*estimate(2:11);
+figure(6)
+plot([1:l],y)
+hold on
+plot([1:l],prev)
+
+% plot([1:l],y)
+% hold on
+% plot([1:l],polyval(estimate,x))
+% pe.terminate;
 
 %% Compute the elapsed time
 
