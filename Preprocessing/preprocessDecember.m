@@ -3,6 +3,8 @@ function Front = preprocessDecember(offset, start_date, end_date)
 %
 % INPUTS:
 %   years_offset: number of years to offset the data
+%   start_date: start date of the data
+%   end_date: end date of the data
 
 % create an empty table to store the data
 Front = table('VariableNames', {'Date', 'Price', 'Volume', 'Expiry'}, 'Size', [0, 4], ...
