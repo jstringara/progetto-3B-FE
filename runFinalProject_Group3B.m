@@ -135,7 +135,7 @@ disp(['The standard deviation of the C-Spread is: ', num2str(std_C_spread * 100)
 %% Compute the Z-Spread for each bond
 
 % if the z spreads file does not exist, compute the Z-Spreads
-if ~isfile('Preprocessed/Z_Spreads.mat')
+if ~isfile('Z_Spreads.mat')
 
 % start a waitbar
 h = waitbar(0, 'Computing the Z-Spreads');
@@ -146,7 +146,7 @@ Bonds_By_Issuer = struct;
 
 for i = 1:length(Bonds)
     % compute the Z-Spread for the bond
-    Bonds{i}.Z_Spreads = compute_ZSpread(Bonds{i}, dates_common, zrates_common);
+    Bonds{i}.Z_Spreads = compute_ZSpread(Bonds{i}, dates, zrates);
     % update the waitbar
     waitbar(i/tot, h, ['Computing the Z-Spreads: ', num2str(i/tot*100), '%'])
     
@@ -201,11 +201,11 @@ close(h);
     Z_spread.Z_Spread(isnan(Z_spread.Z_Spread)) = 0;
 
     % save the Z-Spreads
-    save('Preprocessed/Z_Spreads.mat', 'Z_spread');
+    save('Z_Spreads.mat', 'Z_spread');
 
 else
     % load the Z-Spreads
-    load('Preprocessed/Z_Spreads.mat');
+    load('Z_Spreads.mat');
 end
 
 %% Plot the Z-Spread
