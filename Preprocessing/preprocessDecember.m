@@ -43,7 +43,7 @@ for y = years
     expiry_date = max(selected_data.Date(~isnan(selected_data.Price)));
 
     % select the data
-    selected_data = selected_data(selected_data.Date > prev_date & selected_data.Date <= last_date, :);
+    selected_data = selected_data(selected_data.Date >= prev_date & selected_data.Date < last_date, :);
 
     % fill the volume with 0
     selected_data.Volume = fillmissing(selected_data.Volume, 'constant', 0);
