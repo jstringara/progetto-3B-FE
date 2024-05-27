@@ -1,55 +1,82 @@
-function ZSpreads = compute_ZSpread(Bond, dates, zrates)
-% compute_ZSpread computes the Z-Spread for a given bond
+function Z_spread = compute_ZSpread(Bonds, dates, zrates)
+% COMPUTE_ZSPREAD Compute the Z-Spreads for the bonds
 %
 % INPUTS
-% - Bond: the bond [structure]
+% - Bonds: the bonds [cell array]
 % - dates: the dates [matrix]
 % - zrates: the zero rates [matrix]
 
-% compute the Z-Spread
-ZSpreads = zeros(height(dates), 1);
+% if the z-spreads file already exist, load it and return
+if isfile('Z_Spreads.mat')
+    load('Z_Spreads.mat');
+    return
+end
 
-% TODO: parallelize this using fsolve instead of fzero
+% start a waitbar
+h = waitbar(0, 'Computing the Z-Spreads');
+tot = length(Bonds);
 
-for i=1:height(dates)
+% group the bonds by issuer
+Bonds_By_Issuer = struct;
 
-    % set to 0 the Z-spread if the bond is not active
-    if isnan(Bond.Prices(i)) 
-        ZSpreads(i) = 0;
-    % there is a valid price
+for i = 1:length(Bonds)
+    % compute the Z-Spread for the bond
+    Bonds{i}.Z_Spreads = compute_ZSpread_Bond(Bonds{i}, dates, zrates);
+    % update the waitbar
+    waitbar(i/tot, h, ['Computing the Z-Spreads: ', num2str(i/tot*100), '%'])
+    
+    % add the bond to the issuer in the struct
+    if isfield(Bonds_By_Issuer, Bonds{i}.Issuer)
+        Bonds_By_Issuer.(Bonds{i}.Issuer){end+1} = Bonds{i};
     else
-        % find the zrates on the coupon dates which are bigger than the last NaN value
-        coupon_dates = Bond.CouponDates(Bond.CouponDates >= dates(i,1));
-        %compute zero rates on the valid coupon dates
-        zrates_coupons = interp1(dates(i,2:end), zrates(i,:), coupon_dates, 'nearest', 'extrap');
-        % set the zrates before the first date to 0
-        zrates_coupons(coupon_dates < dates(i,2)) = 0;
-        % compute the yearfractions
-        EU_30_360 = 6;
-        yf_coupon = yearfrac([dates(i,1), coupon_dates(1:end-1)], coupon_dates, EU_30_360);
-        yf = yearfrac(dates(i,1), coupon_dates, EU_30_360);
-        % any yeafraction is less than 0.01, set the Z-spread to 0
-        % # TODO: sistemare la condizione. Il vecchio era se qualunque yf è minore di 0.01
-        if max(yf) < 0.075
-            ZSpreads(i) = 0;
-            continue;
-        end
-        % % if the yf is 0, set the Z-spread to 0
-        % if any(yf == 0)
-        %     ZSpreads(i) = 0;
-        %     continue;
-        % end
-        % compute the coupons
-        coupons = Bond.CouponRate * yf_coupon;
-        coupons(end) = coupons(end) + 100; % add the principal at the end
-        % compute the price as a function of the z-spread
-        price = @(z) sum(coupons .* exp( (- z - zrates_coupons) .* yf));
-        % compute the Z-spread using fzero (start from the previous value)
-        prev = 0;
-        if i > 1
-            prev = ZSpreads(i-1);
-        end
-        ZSpreads(i) = fzero(@(z) price(z) - Bond.Prices(i), prev);
+        Bonds_By_Issuer.(Bonds{i}.Issuer) = {Bonds{i}};
     end
+end
+% close the waitbar
+close(h);
+
+% Compute the Z-Spread for each issuer
+
+% create a table to store the Z-Spreads
+Z_spread = table(Bonds{1}.Dates, zeros(size(Bonds{1}.Dates)), ...
+    'VariableNames', {'Date', 'Z_Spread'});
+  
+% number of issuers active for each date
+total_issuers_active = zeros(size(Bonds{1}.Dates));
+
+% iterate over the fields of the struct (the issuers)
+for issuer = fields(Bonds_By_Issuer)'
+
+    % get the bonds of the issuer
+    bonds = Bonds_By_Issuer.(issuer{1});
+
+    % compute the total volume of bonds traded for each date
+    total_volume = zeros(size(Bonds{1}.Dates));
+    Z_spread_issuer = zeros(size(Bonds{1}.Dates));
+    for j = 1:length(bonds)
+        % exclude bond with code "XS0877820422" (it has NaN values)
+        if bonds{j}.Code == "XS0877820422"
+            continue
+        end
+        Z_spread_issuer = Z_spread_issuer + bonds{j}.Volume .* bonds{j}.Z_Spreads;
+        total_volume = total_volume + bonds{j}.Volume .* (bonds{j}.Z_Spreads ~= 0);
+    end
+
+    % normalize the Z-Spreads of the issuer by the total volume
+    Z_spread_issuer = Z_spread_issuer ./ total_volume;
+    % fill the NaN values (no bonds traded)
+    Z_spread_issuer(isnan(Z_spread_issuer)) = 0;
+    % add the Z-Spreads to the table
+    Z_spread.Z_Spread = Z_spread.Z_Spread + Z_spread_issuer;
+    % add the number of active issuers
+    total_issuers_active = total_issuers_active + (total_volume ~= 0);
+end
+
+% normalize the Z-Spreads by the number of issuers
+Z_spread.Z_Spread = Z_spread.Z_Spread ./ total_issuers_active;
+Z_spread.Z_Spread(isnan(Z_spread.Z_Spread)) = 0;
+
+% save the Z-Spreads
+save('Z_Spreads.mat', 'Z_spread');
 
 end
