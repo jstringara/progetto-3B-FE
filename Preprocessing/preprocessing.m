@@ -29,16 +29,5 @@ Next_December = Next_December(ismember(Next_December.Date, dates), :);
 Next_2_December = Next_2_December(ismember(Next_2_December.Date, dates), :);
 Daily_Future = Daily_Future(ismember(Daily_Future.Date, dates), :);
 
-% fill in the OIS_Data to fully match the dates of the future
-new_OIS_Data = table('Size', [length(dates), size(OIS_Data, 2)], ...
-    'VariableTypes', varfun(@class, OIS_Data, 'OutputFormat', 'cell'));
-new_OIS_Data.Properties.VariableNames = OIS_Data.Properties.VariableNames;
-new_OIS_Data.Date = dates;
-new_OIS_Data{ismember(dates, OIS_Data.Date), 2:end} = OIS_Data{ismember(OIS_Data.Date, dates), 2:end};
-new_OIS_Data = fillmissing(new_OIS_Data, 'previous');
-
-% merge the data
-OIS_Data = new_OIS_Data;
-
 % preprocess the bonds data
 Bonds = preprocessBonds(phase_III_dates(1), phase_III_dates(2), dates);
