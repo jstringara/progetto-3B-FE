@@ -88,6 +88,8 @@ C_spread_next = compute_C_Spread(Next_December, Daily_Future, risk_free_rate);
 
 %% Point 3.b) Compute a single C_spread time series with a roll-over rule
 
+% ***: this part is not really pretty, could be put into a function but it does not make a lot of sense
+
 % build a single time series of the C-Spread
 C_spread = table(Daily_Future.Date, zeros(size(Daily_Future.Price)), ...
     'VariableNames', {'Date', 'C_Spread'});
