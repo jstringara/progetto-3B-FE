@@ -77,49 +77,10 @@ grouping = [
 
 %% Point 3) compute the C-Spread for the EUA futures
 
-% build the zero rates matrix
-zrates_common = zeros(height(Daily_Future), size(zrates,2));
-dates_common = NaT(height(Daily_Future), size(dates,2));
+risk_free_rate = RiskFreeRate(dates, zrates, Daily_Future.Date);
 
-for i=1:height(Daily_Future)
-    % check if the date is in the dates
-    if ismember(Daily_Future.Date(i), dates(:,1))
-        % find the index of the date
-        idx = find(dates(:,1) == Daily_Future.Date(i));
-        zrates_common(i,:) = zrates(idx,:);
-        % copy the dates
-        dates_common(i,:) = dates(idx,:);
-    else
-        % find the previous date
-        idx = find(dates(:,1) < Daily_Future.Date(i), 1, 'last');
-        % copy the previous date
-        zrates_common(i,:) = zrates(idx,:);
-        % compute the new dates by adding the difference
-        dates_common(i,:) = dates(idx,:) + (Daily_Future.Date(i) - dates(idx,1));
-    end
-end
-
-% interpolate the risk free rate for the needed expiry
-risk_free_rate = zeros(height(Daily_Future),1);
-
-for i=1:height(Daily_Future)
-    expiry = Front_December.Expiry(i);
-    risk_free_rate(i) = interp1(dates_common(i,2:end), zrates_common(i,:), expiry, 'linear', 'extrap');
-end
-
-% compute the C-Spread for the front December and next December
-ACT_365 = 3;
-C_spread_front = log(Front_December.Price ./ Daily_Future.Price) ./ ...
-    yearfrac(Daily_Future.Date, Front_December.Expiry, ACT_365) ...
-    - risk_free_rate;
-
-C_spread_next = log(Next_December.Price ./ Daily_Future.Price) ./ ...
-    yearfrac(Daily_Future.Date, Next_December.Expiry, ACT_365) ...
-    - risk_free_rate;
-
-% create two tables with the C-Spreads
-C_spread_front = table(Daily_Future.Date, C_spread_front, 'VariableNames', {'Date', 'C_Spread'});
-C_spread_next = table(Daily_Future.Date, C_spread_next, 'VariableNames', {'Date', 'C_Spread'});
+C_spread_front = compute_C_Spread(Front_December, Daily_Future, risk_free_rate);
+C_spread_next = compute_C_Spread(Next_December, Daily_Future, risk_free_rate);
 
 %% Plot the two C-Spreads
 
