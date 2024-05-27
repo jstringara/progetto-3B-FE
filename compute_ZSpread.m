@@ -26,7 +26,7 @@ for i=1:height(dates)
         zrates_coupons(coupon_dates < dates(i,2)) = 0;
         % compute the yearfractions
         EU_30_360 = 6;
-        yf_coupon = yearfrac([dates(i,1); coupon_dates(1:end-1)], coupon_dates, EU_30_360);
+        yf_coupon = yearfrac([dates(i,1), coupon_dates(1:end-1)], coupon_dates, EU_30_360);
         yf = yearfrac(dates(i,1), coupon_dates, EU_30_360);
         % any yeafraction is less than 0.01, set the Z-spread to 0
         % # TODO: sistemare la condizione. Il vecchio era se qualunque yf è minore di 0.01
@@ -43,7 +43,7 @@ for i=1:height(dates)
         coupons = Bond.CouponRate * yf_coupon;
         coupons(end) = coupons(end) + 100; % add the principal at the end
         % compute the price as a function of the z-spread
-        price = @(z) coupons' * exp( (- z - zrates_coupons) .* yf);
+        price = @(z) sum(coupons .* exp( (- z - zrates_coupons) .* yf));
         % compute the Z-spread using fzero (start from the previous value)
         prev = 0;
         if i > 1
