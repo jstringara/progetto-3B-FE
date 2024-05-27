@@ -1,9 +1,10 @@
-function Bonds = preprocessBonds(start_date, end_date)
+function Bonds = preprocessBonds(start_date, end_date, target_dates)
 % PREPROCESSBONDS Preprocess the bonds data
 %
 % INPUTS:
 %   start_date: start date of the data
 %   end_date: end date of the data
+%   target_dates: dates to match
 
 % load the list of valid bonds
 list_valid_bonds = readtable('Data/Bonds/List_Valid_Bonds.csv');
@@ -45,7 +46,7 @@ for i = 1:size(list_valid_bonds, 1)
 
     % load the data (if available)
     try
-        [Bond.Dates, Bond.Prices] = loadBondData(Bond, start_date, end_date);
+        [Bond.Dates, Bond.Prices] = loadBondData(Bond, start_date, end_date, target_dates);
     catch
         Bond.Dates = [];
         Bond.Prices = [];
