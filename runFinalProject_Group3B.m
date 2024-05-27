@@ -31,12 +31,8 @@ pe = pyenv('Version', 'venv/Scripts/python.exe', 'ExecutionMode', 'OutOfProcess'
 
 %% Preprocces and data loading
 
-% load the OIS data
-OIS_Data = preprocess_OIS('OIS_Data.csv');
-
-% load the Next 
-Next_December = readtable('Next_December.csv');
-Next_2_December = readtable('Next_2_December.csv');
+% ***: Preprocessing is slow as hell, it takes 11 seconds to load the data
+preprocessing; % run the preprocessing script
 
 %% Point 1) Bootstrap the interest rates curve for each date
 
@@ -46,12 +42,6 @@ Next_2_December = readtable('Next_2_December.csv');
 % animated_zrates(zrates, dates)
 
 %% Point 2) Verify that the front December EUA future is the most liquid one in terms of volume
-
-% load the preprocessed data
-Volumes_march_front = readtable('Volumes_March.csv');
-Volumes_june_front = readtable('Volumes_June.csv');
-Volumes_sept_front = readtable('Volumes_September.csv');
-Front_December = readtable('Front_December.csv');
 
 Volumes_fronts_months = [
     Volumes_march_front.Volume;
@@ -71,7 +61,6 @@ grouping = [
 
 % boxplot of the December front and next
 
-
 Volumes_dec = [
     Front_December.Volume;
     Next_December.Volume;
@@ -87,9 +76,6 @@ grouping = [
 % plot_Volumes_december(Volumes_dec, grouping)
 
 %% Point 3) compute the C-Spread for the EUA futures
-
-% load the preprocessed data of the daily prices
-Daily_Future = readtable('Daily_Future.csv');
 
 % build the zero rates matrix
 zrates_common = zeros(height(Daily_Future), size(zrates,2));
@@ -180,34 +166,6 @@ disp(['The standard deviation of the C-Spread is: ', num2str(std_C_spread * 100)
 %% Plot the C-Spread
 
 % plot_C(C_spread)
-
-%% Load the data of the Bonds
-
-load('Bonds.mat');
-
-% transform the dates into datetime
-date_format = 'yyyy-MM-dd';
-
-for i = 1:length(Bonds)
-
-    % convert chars to strings
-    Bonds{i}.Issuer = string(Bonds{i}.Issuer);
-    Bonds{i}.Code = string(Bonds{i}.Code);
-    Bonds{i}.MaturityDate = string(Bonds{i}.MaturityDate);
-    Bonds{i}.FirstQuote = string(Bonds{i}.FirstQuote);
-    Bonds{i}.CouponDates = string(Bonds{i}.CouponDates);
-    Bonds{i}.Dates = string(Bonds{i}.Dates);
-
-    % convert the dates to datetime
-    Bonds{i}.MaturityDate = datetime(Bonds{i}.MaturityDate, 'InputFormat', date_format);
-    Bonds{i}.FirstQuote = datetime(Bonds{i}.FirstQuote, 'InputFormat', date_format);
-    Bonds{i}.CouponDates = datetime(Bonds{i}.CouponDates, 'InputFormat', date_format);
-    Bonds{i}.Dates = datetime(Bonds{i}.Dates, 'InputFormat', date_format);
-
-    % convert the volume to double
-    Bonds{i}.Volume = double(Bonds{i}.Volume);
-
-end
 
 %% Compute the Z-Spread for each bond
 
