@@ -25,12 +25,8 @@ issuers_to_keep = ["MT", "ENEI", "ENGIE", "LAFARGE", "HEIG", "EDF", "ENI", "TTEF
         "EONG", "CEZP", "VIE"];
 list_valid_bonds = list_valid_bonds(ismember(list_valid_bonds.ParentTicker, issuers_to_keep), :);
 
-size(list_valid_bonds, 1)
-
 % keep only bonds with more than 500 million issued
 list_valid_bonds = list_valid_bonds(list_valid_bonds.OriginalAmountIssued >= 500 * 10^6, :);
-
-size(list_valid_bonds, 1)
 
 % load the bonds data
 Bonds = {};
