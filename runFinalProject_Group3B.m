@@ -28,7 +28,7 @@ addpath('Python');
 addpath('Plot');
 
 % set the python environment
-pe = pyenv('Version', 'venv/Scripts/python.exe', 'ExecutionMode', 'OutOfProcess');
+%pe = pyenv('Version', 'venv/Scripts/python.exe', 'ExecutionMode', 'OutOfProcess');
 
 %% Preprocces and data loading
 
@@ -146,12 +146,12 @@ plot_C_Z_r(C_spread, Z_spread, risk_free_rate)
 
 %% Mean and Variance of the Z-Spread (only on dates before 2021)
 
-%mean_Z_spread = mean(Z_spread.Z_Spread(Z_spread.Date < datetime(2021, 1, 1)));
-%std_Z_spread = std(Z_spread.Z_Spread(Z_spread.Date < datetime(2021, 1, 1)));
+mean_Z_spread = mean(Z_spread.Z_Spread(Z_spread.Date < datetime(2021, 1, 1)));
+std_Z_spread = std(Z_spread.Z_Spread(Z_spread.Date < datetime(2021, 1, 1)));
 
 %% Mean and Variance of the Z-Spread (only on dates before 2022)
-mean_Z_spread = mean(Z_spread.Z_Spread(Z_spread.Date < datetime(2022, 1, 1)));
-std_Z_spread = std(Z_spread.Z_Spread(Z_spread.Date < datetime(2022, 1, 1)));
+% mean_Z_spread = mean(Z_spread.Z_Spread(Z_spread.Date < datetime(2022, 1, 1)));
+% std_Z_spread = std(Z_spread.Z_Spread(Z_spread.Date < datetime(2022, 1, 1)));
 
 % display the results
 disp(['The mean of the Z-Spread is: ', num2str(mean_Z_spread * 100), '%']);
@@ -160,7 +160,7 @@ disp(['The standard deviation of the Z-Spread is: ', num2str(std_Z_spread * 100)
 %% Meand and Variance for the interest rates (only on dates before 2021)
 
 % take the 3M interest rate
-risk_free_rate = zrates_common(:,7);
+risk_free_rate = zrates(:,7);
 risk_free_rate = table(Daily_Future.Date, risk_free_rate, 'VariableNames', {'Date', 'Risk_Free_Rate'});
 
 % mean_zrates = mean(risk_free_rate(dates_common(:,1) < datetime(2021, 1, 1)));
@@ -171,15 +171,15 @@ risk_free_rate = table(Daily_Future.Date, risk_free_rate, 'VariableNames', {'Dat
 
 %% Limit the data to the dates before 2021
 
-%C_spread = C_spread(C_spread.Date < datetime(2021, 1, 1), :);
-%Z_spread = Z_spread(Z_spread.Date < datetime(2021, 1, 1), :);
-%risk_free_rate = risk_free_rate(dates_common(:,1) < datetime(2021, 1, 1), :);
+C_spread = C_spread(C_spread.Date < datetime(2021, 1, 1), :);
+Z_spread = Z_spread(Z_spread.Date < datetime(2021, 1, 1), :);
+risk_free_rate = risk_free_rate(dates(:,1) < datetime(2021, 1, 1), :);
 
 %% Limit the data to the dates before October 2022
 
-C_spread = C_spread(C_spread.Date <= datetime(2022,10,31), :);
-Z_spread = Z_spread(Z_spread.Date <= datetime(2022,10,31), :);
-risk_free_rate = risk_free_rate(dates_common(:, 1) < datetime(2022, 10, 31), :);
+% C_spread = C_spread(C_spread.Date <= datetime(2022,10,31), :);
+% Z_spread = Z_spread(Z_spread.Date <= datetime(2022,10,31), :);
+% risk_free_rate = risk_free_rate(dates(:, 1) < datetime(2022, 10, 31), :);
 
 %% Plot ACF and PACF of the Z-Spread and C-Spread
 
@@ -190,17 +190,17 @@ risk_free_rate = risk_free_rate(dates_common(:, 1) < datetime(2022, 10, 31), :);
 
 %% Check that they are all integrated of order 1
 
-% load the python function from the file
-econometrics = py.importlib.import_module('Python.econometrics');
-
-% compute the ADF test for the C-Spread
-res = econometrics.compute_ADF( ...
-    py.dict(Date=py.list(C_spread.Date), C_Spread=py.list(C_spread.C_Spread)), ...
-    py.dict(Date=py.list(Z_spread.Date), Z_Spread=py.list(Z_spread.Z_Spread)), ...
-    py.dict(Date=py.list(C_spread.Date), Risk_Free_Rate=py.list(risk_free_rate.Risk_Free_Rate)) ...
-);
-
-disp(res)
+% % load the python function from the file
+% econometrics = py.importlib.import_module('Python.econometrics');
+% 
+% % compute the ADF test for the C-Spread
+% res = econometrics.compute_ADF( ...
+%     py.dict(Date=py.list(C_spread.Date), C_Spread=py.list(C_spread.C_Spread)), ...
+%     py.dict(Date=py.list(Z_spread.Date), Z_Spread=py.list(Z_spread.Z_Spread)), ...
+%     py.dict(Date=py.list(C_spread.Date), Risk_Free_Rate=py.list(risk_free_rate.Risk_Free_Rate)) ...
+% );
+% 
+% disp(res)
 
 %% Johansen Test to find cointegratin between these three
 
