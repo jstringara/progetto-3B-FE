@@ -33,6 +33,8 @@ list_valid_bonds = list_valid_bonds(list_valid_bonds.OriginalAmountIssued >= 500
 Bonds = {};
 Unfound_Bonds = {};
 
+Issuers_data = struct(); % struct to store the data for each issuer (to avoid loading the same data multiple times)
+
 for i = 1:size(list_valid_bonds, 1)
 
     % create the Bond struct
@@ -46,7 +48,8 @@ for i = 1:size(list_valid_bonds, 1)
 
     % load the data (if available)
     try
-        [Bond.Dates, Bond.Prices] = loadBondData(Bond, start_date, end_date, target_dates);
+        [Bond.Dates, Bond.Prices, Issuers_data] = ...
+            loadBondData(Bond, Issuers_data, start_date, end_date, target_dates);
     catch
         Bond.Dates = [];
         Bond.Prices = [];
