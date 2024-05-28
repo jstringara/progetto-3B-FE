@@ -31,3 +31,6 @@ Daily_Future = Daily_Future(ismember(Daily_Future.Date, dates), :);
 
 % preprocess the bonds data
 Bonds = preprocessBonds(phase_III_dates(1), phase_III_dates(2), dates);
+
+% load the open interest data for the front and next contracts
+OpenInterest = preprocess_OI( phase_III_dates(1), phase_III_dates(2), Front_December);
