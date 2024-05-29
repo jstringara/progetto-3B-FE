@@ -1,6 +1,6 @@
 % runFinalProject_Group3B
 %  Group 3B, AY2023-2024
-% 
+%
 %
 % to run:
 % > runFinalProject_Group3B.m
@@ -53,14 +53,14 @@ Volumes_fronts_months = [
     Volumes_june_front.Volume;
     Volumes_sept_front.Volume;
     Front_December.Volume
-];
+    ];
 
 grouping = [
     zeros(height(Volumes_march_front),1);
     ones(height(Volumes_june_front),1);
     2*ones(height(Volumes_sept_front),1);
     3*ones(height(Front_December),1)
-];
+    ];
 
 % plot_Volumes_fronts_months(Volumes_fronts_months, grouping)
 
@@ -70,13 +70,13 @@ Volumes_dec = [
     Front_December.Volume;
     Next_December.Volume;
     Next_2_December.Volume
-];
+    ];
 
 grouping = [
     zeros(height(Front_December),1);
     ones(height(Next_December),1);
     2*ones(height(Next_2_December),1)
-];
+    ];
 
 % plot_Volumes_december(Volumes_dec, grouping)
 
@@ -127,9 +127,9 @@ end
 
 % years = unique(year(Daily_Future.Date));
 % prev_date = datetime(years(1), 1, 1);
-% 
+%
 % change_dates = OpenInterest.Date(find(OpenInterest.Front<OpenInterest.Next));
-% 
+%
 % % for each year
 % for i = 1:length(years)
 %     value_year = years(i);
@@ -149,26 +149,26 @@ end
 %         C_spread.C_Spread(C_spread.Date >= last_front_date & C_spread.Date < expiry_front) = ...
 %         C_spread_next.C_Spread(C_spread.Date >= last_front_date & C_spread.Date < expiry_front);
 %         % update the previous date
-% 
+%
 %     end
 % prev_date = expiry_front;
-% 
+%
 % end
 
 
- %% Point 9.c.ii) Compute a single C_spread time series with a roll-over rule
-% 
+%% Point 9.c.ii) Compute a single C_spread time series with a roll-over rule
+%
 % % ***: this part is not really pretty, could be put into a function but it does not make a lot of sense
-% 
+%
 % % build a single time series of the C-Spread
 % C_spread = table(Daily_Future.Date, zeros(size(Daily_Future.Price)), ...
 %     'VariableNames', {'Date', 'C_Spread'});
-% 
+%
 % % each year up to the 15th of November we use the front December
 % % after the 15th of November and up to the front's expiry we use the next December
 % years = unique(year(Daily_Future.Date));
 % prev_date = Front_December.Expiry(1)-calmonths(1)-calyears(1);
-% 
+%
 % % for each year
 % for i = 1:length(years)
 %     value_year = years(i);
@@ -190,16 +190,16 @@ end
 %% Point 9.c.iii) Compute a single C_spread time series with a roll-over rule
 
 % % ***: this part is not really pretty, could be put into a function but it does not make a lot of sense
-% 
+%
 % % build a single time series of the C-Spread
 % C_spread = table(Daily_Future.Date, zeros(size(Daily_Future.Price)), ...
 %     'VariableNames', {'Date', 'C_Spread'});
-% 
+%
 % % each year up to the 15th of November we use the front December
 % % after the 15th of November and up to the front's expiry we use the next December
 % years = unique(year(Daily_Future.Date));
 % prev_date = Front_December.Expiry(1)-calweeks(1)-calyears(1);
-% 
+%
 % % for each year
 % for i = 1:length(years)
 %     value_year = years(i);
@@ -276,9 +276,9 @@ risk_free_rate = risk_free_rate(dates(:,1) < datetime(2021, 1, 1), :);
 
 %% Limit the data to the dates before October 2022
 
- % C_spread = C_spread(C_spread.Date <= datetime(2022,10,31), :);
- % Z_spread = Z_spread(Z_spread.Date <= datetime(2022,10,31), :);
- % risk_free_rate = risk_free_rate(dates(:, 1) < datetime(2022, 10, 31), :);
+% C_spread = C_spread(C_spread.Date <= datetime(2022,10,31), :);
+% Z_spread = Z_spread(Z_spread.Date <= datetime(2022,10,31), :);
+% risk_free_rate = risk_free_rate(dates(:, 1) < datetime(2022, 10, 31), :);
 
 %% Plot ACF and PACF of the Z-Spread and C-Spread
 
@@ -291,14 +291,14 @@ risk_free_rate = risk_free_rate(dates(:,1) < datetime(2021, 1, 1), :);
 
 % % load the python function from the file
 % econometrics = py.importlib.import_module('Python.econometrics');
-% 
+%
 % % compute the ADF test for the C-Spread
 % res = econometrics.compute_ADF( ...
 %     py.dict(Date=py.list(C_spread.Date), C_Spread=py.list(C_spread.C_Spread)), ...
 %     py.dict(Date=py.list(Z_spread.Date), Z_Spread=py.list(Z_spread.Z_Spread)), ...
 %     py.dict(Date=py.list(C_spread.Date), Risk_Free_Rate=py.list(risk_free_rate.Risk_Free_Rate)) ...
 % );
-% 
+%
 % disp(res)
 
 %% Johansen Test to find cointegration between these three
@@ -313,7 +313,7 @@ Y = table( ...
     Z_spread.Z_Spread, ...
     risk_free_rate.Risk_Free_Rate, ...
     'VariableNames', {'Date', 'C_Spread', 'Z_Spread', 'Risk_Free_Rate'} ...
-);
+    );
 
 Y_mat = [Y.C_Spread, Y.Z_Spread, Y.Risk_Free_Rate];
 
@@ -432,8 +432,8 @@ xlabel('Date')
 %% Pearson correlation test
 
 % X= table( ...
-%     log(extra_variables.SPX(2:end) ./ extra_variables.SPX(1:end-1)), ...    
-%     extra_variables.VIX(2:end), ...    
+%     log(extra_variables.SPX(2:end) ./ extra_variables.SPX(1:end-1)), ...
+%     extra_variables.VIX(2:end), ...
 %     log(extra_variables.WTI(2:end) ./ extra_variables.WTI(1:end-1)), ...
 %     v, ...
 %     'VariableNames', {'log_SPX', 'VIX','log_WTI','GARCH'} ...
@@ -442,7 +442,7 @@ X=[log(extra_variables.SPX(2:end) ./ extra_variables.SPX(1:end-1)),extra_variabl
 % Verifica se ci sono valori complessi
 % hasComplexValues = false;
 % vars = X.Properties.VariableNames; % Ottiene i nomi delle variabili (colonne) della tabella
-% 
+%
 % for i = 1:numel(vars)
 %     varData = X.(vars{i}); % Estrae i dati della colonna i
 %     if any(imag(varData(:)) ~= 0) % Controlla se ci sono parti immaginarie non zero
@@ -475,7 +475,7 @@ Y = table( ...
     Delta_C, ...
     'VariableNames', {'Delta_C_lag1', 'Delta_C_lag2', 'Delta_C_lag3', 'Delta_Z', 'Delta_r', ...
     'ect_lag1', 'log_WTI', 'log_SPX', 'VIX', 'GARCH', 'EWMA', 'Delta_C' } ...
-);
+    );
 
 % remove nan values
 Y = rmmissing(Y);
@@ -484,8 +484,8 @@ Y = rmmissing(Y);
 
 % fit the model
 mdl = fitlm(Y, ...
-'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + log_WTI + log_SPX + VIX + GARCH', ...
-'Intercept', false);
+    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + log_WTI + log_SPX + VIX + GARCH', ...
+    'Intercept', false);
 
 % print the summary
 disp(mdl)
@@ -497,8 +497,8 @@ BIC = mdl.ModelCriterion.BIC;
 %% Model 1 with the GARCH variance
 % fit the model
 mdl = fitlm(Y(:,[1:3,6,12]), ...
-'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + ect_lag1', ...
-'Intercept', false);
+    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + ect_lag1', ...
+    'Intercept', false);
 
 % print the summary
 disp(mdl)
@@ -510,8 +510,8 @@ BIC = mdl.ModelCriterion.BIC;
 %% Model 2 with the GARCH variance
 % fit the model
 mdl = fitlm(Y(:,[1:6,12]), ...
-'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r +ect_lag1', ...
-'Intercept', false);
+    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r +ect_lag1', ...
+    'Intercept', false);
 
 % print the summary
 disp(mdl)
@@ -523,8 +523,8 @@ BIC = mdl.ModelCriterion.BIC;
 %% Model 3 with the GARCH variance
 % fit the model
 mdl = fitlm(Y(:,[7,12]), ...
-'Delta_C ~ log_WTI', ...
-'Intercept', false);
+    'Delta_C ~ log_WTI', ...
+    'Intercept', false);
 
 % print the summary
 disp(mdl)
@@ -536,8 +536,8 @@ BIC = mdl.ModelCriterion.BIC;
 %% Model 4 with the GARCH variance
 % fit the model
 mdl = fitlm(Y(:,[1:7,12]), ...
-'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r +ect_lag1 +log_WTI', ...
-'Intercept', false);
+    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r +ect_lag1 +log_WTI', ...
+    'Intercept', false);
 
 % print the summary
 disp(mdl)
@@ -549,8 +549,8 @@ BIC = mdl.ModelCriterion.BIC;
 %% Model 5 with the GARCH variance
 % fit the model
 mdl = fitlm(Y(:,[7:10,12]), ...
-'Delta_C ~ log_WTI + log_SPX + VIX + GARCH', ...
-'Intercept', false);
+    'Delta_C ~ log_WTI + log_SPX + VIX + GARCH', ...
+    'Intercept', false);
 
 % print the summary
 disp(mdl)
@@ -565,8 +565,8 @@ BIC = mdl.ModelCriterion.BIC;
 disp(['The AIC of the model is: ', num2str(AIC)]);
 disp(['The BIC of the model is: ', num2str(BIC)]);
 mdl = fitlm(Y, ...
-'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + log_WTI + log_SPX + VIX + EWMA', ...
-'Intercept', false);
+    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + log_WTI + log_SPX + VIX + EWMA', ...
+    'Intercept', false);
 
 disp(mdl)
 
@@ -579,9 +579,7 @@ disp(['The BIC of the model with EWMA is: ', num2str(BIC)]);
 
 %% Quantile regression
 
-
-y=Delta_C(4:end);
-%x=[Delta_C_lag1(4:end)];
+y=Delta_C(4:end);fi([], 1, 16)
 x=[Delta_C_lag1, ...
     Delta_C_lag2, ...
     Delta_C_lag3, ...
@@ -593,22 +591,49 @@ x=[Delta_C_lag1, ...
     extra_variables.VIX(2:end), ...
     v];
 x=x(4:end,:);
+l = length(y);
 
-
-% [p,stats]=quantreg(x(4:100),y(4:100),0.1);
-tau=0.1;
-l=length(y);
-[ estimate,pvalue,j ] = qr_standard(x,y,tau,'test', 'kernel', 'maxit', 5000, 'tol', 1e-10)%% Terminate the python environment
-prev=estimate(1)+x*estimate(2:11);
 figure(6)
-plot([1:l],y)
+plot([1:l], y, 'DisplayName', 'y') % Aggiunge la legenda per y
 hold on
-plot([1:l],prev)
 
-% plot([1:l],y)
-% hold on
-% plot([1:l],polyval(estimate,x))
-% pe.terminate;
+% Define color map
+colors = lines(5);
+
+for i = 1:4
+    figure;
+    l = length(y);
+    
+    % Plot y with black
+    plot([1:l], y, 'DisplayName', 'y', 'Color', 'k')
+    hold on
+    
+     % First line (tau = 0.1 * i)
+    tau1 = 0.1 * i;
+    [estimate1, pvalue1, j1] = qr_standard(x, y, tau1, 'test', 'kernel', 'maxit', 5000, 'tol', 1e-10);
+    y_quantile1 = estimate1(1) + x * estimate1(2:11);
+    
+    % Assign a specific color
+    if i == 1
+        plot_color = [0, 0.4470, 0.7410]; % Change the color with respect to the map
+    else
+        plot_color = colors(i, :);
+    end
+    
+    plot([1:l], y_quantile1, 'DisplayName', ['y\_quantile for tau = ', num2str(tau1)], 'Color', plot_color)
+    
+    % Opposite line (tau = 0.1 * (10 - i))
+    tau2 = 0.1 * (10 - i);
+    [estimate2, pvalue2, j2] = qr_standard(x, y, tau2, 'test', 'kernel', 'maxit', 5000, 'tol', 1e-10);
+    y_quantile2 = estimate2(1) + x * estimate2(2:11);
+    
+    % Use the same color for the opposite value
+    plot([1:l], y_quantile2, 'DisplayName', ['y\_quantile for tau = ', num2str(tau2)], 'Color', plot_color)
+    
+    legend show % Show the legend
+    title(['Plot for tau = ', num2str(tau1), ' and tau = ', num2str(tau2)])
+end
+
 
 %% Compute the elapsed time
 
