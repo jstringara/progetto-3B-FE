@@ -2,8 +2,8 @@
 
 % dates of Phase III
 % HACK: change the dates here to match the desired data
-phase_III_dates = [datetime(2013, 1, 1), datetime(2022, 10, 28)];
-phase_IV_dates = [datetime(2013, 1, 1), datetime(2022, 10, 28)];
+phase_III_dates = [datetime(2013, 1, 1), datetime(2022, 1, 1)];
+%phase_IV_dates = [datetime(2013, 1, 1), datetime(2022, 10, 28)];
 
 % load the OIS data
 OIS_Data = preprocess_OIS(phase_III_dates(1), phase_III_dates(2));

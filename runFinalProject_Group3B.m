@@ -242,12 +242,12 @@ plot_C_Z_r(C_spread, Z_spread, risk_free_rate)
 
 %% Mean and Variance of the Z-Spread (only on dates before 2021)
 
-% mean_Z_spread = mean(Z_spread.Z_Spread(Z_spread.Date < datetime(2021, 1, 1)));
-% std_Z_spread = std(Z_spread.Z_Spread(Z_spread.Date < datetime(2021, 1, 1)));
+mean_Z_spread = mean(Z_spread.Z_Spread(Z_spread.Date < datetime(2021, 1, 1)));
+std_Z_spread = std(Z_spread.Z_Spread(Z_spread.Date < datetime(2021, 1, 1)));
 
 %% Mean and Variance of the Z-Spread (only on dates before 2022)
-mean_Z_spread = mean(Z_spread.Z_Spread(Z_spread.Date <= datetime(2022, 10, 28)));
-std_Z_spread = std(Z_spread.Z_Spread(Z_spread.Date <= datetime(2022, 10, 28)));
+% mean_Z_spread = mean(Z_spread.Z_Spread(Z_spread.Date <= datetime(2022, 10, 28)));
+% std_Z_spread = std(Z_spread.Z_Spread(Z_spread.Date <= datetime(2022, 10, 28)));
 
 % display the results
 disp(['The mean of the Z-Spread is: ', num2str(mean_Z_spread * 100), '%']);
@@ -259,26 +259,26 @@ disp(['The standard deviation of the Z-Spread is: ', num2str(std_Z_spread * 100)
 risk_free_rate = zrates(:,7);
 risk_free_rate = table(Daily_Future.Date, risk_free_rate, 'VariableNames', {'Date', 'Risk_Free_Rate'});
 
-% mean_zrates = mean(risk_free_rate{dates(:,1) < datetime(2021, 1, 1),2});
-% std_zrates = std(risk_free_rate{dates(:,1) < datetime(2021, 1, 1),2});
+mean_zrates = mean(risk_free_rate{dates(:,1) < datetime(2021, 1, 1),2});
+std_zrates = std(risk_free_rate{dates(:,1) < datetime(2021, 1, 1),2});
 
-mean_zrates = mean(risk_free_rate{dates(:,1) < datetime(2022, 10, 29),2});
-std_zrates = std(risk_free_rate{dates(:,1) < datetime(2021, 10, 29),2});
+%mean_zrates = mean(risk_free_rate{dates(:,1) < datetime(2022, 10, 29),2});
+%std_zrates = std(risk_free_rate{dates(:,1) < datetime(2022, 10, 29),2});
 
 disp(['The mean of the zero rates is: ', num2str(mean_zrates * 100), '%']);
 disp(['The standard deviation of the zero rates is: ', num2str(std_zrates * 100), '%']);
 
 %% Limit the data to the dates before 2021
 
-% C_spread = C_spread(C_spread.Date < datetime(2021, 1, 1), :);
-% Z_spread = Z_spread(Z_spread.Date < datetime(2021, 1, 1), :);
-% risk_free_rate = risk_free_rate(dates(:,1) < datetime(2021, 1, 1), :);
+C_spread = C_spread(C_spread.Date < datetime(2021, 1, 1), :);
+Z_spread = Z_spread(Z_spread.Date < datetime(2021, 1, 1), :);
+risk_free_rate = risk_free_rate(dates(:,1) < datetime(2021, 1, 1), :);
 
 %% Limit the data to the dates before October 2022
 
- C_spread = C_spread(C_spread.Date <= datetime(2022,10,31), :);
- Z_spread = Z_spread(Z_spread.Date <= datetime(2022,10,31), :);
- risk_free_rate = risk_free_rate(dates(:, 1) < datetime(2022, 10, 31), :);
+ % C_spread = C_spread(C_spread.Date <= datetime(2022,10,31), :);
+ % Z_spread = Z_spread(Z_spread.Date <= datetime(2022,10,31), :);
+ % risk_free_rate = risk_free_rate(dates(:, 1) < datetime(2022, 10, 31), :);
 
 %% Plot ACF and PACF of the Z-Spread and C-Spread
 

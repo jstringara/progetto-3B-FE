@@ -5,8 +5,8 @@ function Bonds = preprocessBonds(start_date, end_date, target_dates)
 %   start_date: start date of the data
 %   end_date: end date of the data
 %   target_dates: dates to match
-
 % load the list of valid bonds
+
 list_valid_bonds = readtable('Data/Bonds/List_Valid_Bonds.csv');
 
 % drop the first column

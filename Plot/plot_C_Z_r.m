@@ -17,9 +17,9 @@ plot(Z_spread.Date, 100 * Z_spread.Z_Spread, ...
 plot(C_spread.Date, 100 * risk_free_rate, 'black')
 hold on
 % only keep date between the first recorded and the last of 2021
-%xlim([C_spread.Date(1) - calmonths(6), datetime(2020, 12, 31)])
+xlim([C_spread.Date(1) - calmonths(6), datetime(2020, 12, 31)])
 % only keep date between the first recorded and october 2022
-xlim([C_spread.Date(1) - calmonths(6), datetime(2022, 10, 31)])
+% xlim([C_spread.Date(1) - calmonths(6), datetime(2022, 10, 31)])
 ylim([-0.7, 3.7])
 % TODO le dates andiamo indietro di un tot di tre mesi solo sulla start date
 title('C-Spread')
