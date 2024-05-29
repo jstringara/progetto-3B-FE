@@ -31,6 +31,9 @@ OpenInterest.Date = data.Date;
 years = year(start_date):year(end_date);
 prev_date = start_date;
 
+% solve problems with 2014 expiry
+Front.Expiry(Front.Expiry==datetime(2014,12,15))=datetime(2014,12,12);
+
 % loop over the years
 for y = years
 
@@ -42,7 +45,7 @@ for y = years
     expiry_idx = find(Front.Expiry > prev_date, 1);
 
     % select the data
-    selected_data = data(data.Date >= prev_date & data.Date < Front.Expiry(expiry_idx), :);
+    selected_data = data(data.Date > prev_date & data.Date <= Front.Expiry(expiry_idx), :);
 
     % add the data to the OpenInterest table
     OpenInterest.Front(ismember(OpenInterest.Date, selected_data.Date)) = selected_data{:, col_front};

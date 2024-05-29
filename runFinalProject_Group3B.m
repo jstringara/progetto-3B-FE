@@ -122,8 +122,41 @@ for i = 1:length(years)
     % update the previous date
     prev_date = expiry_front;
 end
+%% Point 9.c.i) Compute a single C_spread time series with a roll-over rule
+% each year up to the front open interest bigger than the next one
 
-% %% Point 9.c.ii) Compute a single C_spread time series with a roll-over rule
+% years = unique(year(Daily_Future.Date));
+% prev_date = datetime(years(1), 1, 1);
+% 
+% change_dates = OpenInterest.Date(find(OpenInterest.Front<OpenInterest.Next));
+% 
+% % for each year
+% for i = 1:length(years)
+%     value_year = years(i);
+%     % find the expiry for that year as the expiry with matching year
+%     expiry_front = Front_December.Expiry(year(Front_December.Date) == value_year);
+%     expiry_front = expiry_front(1);
+%     % computing last front date
+%     index_front_date = find(year(change_dates) == value_year,1);
+%     last_front_date = change_dates(index_front_date);
+%     if isempty(index_front_date)
+%         C_spread.C_Spread(C_spread.Date >= prev_date & C_spread.Date < expiry_front) = ...
+%         C_spread_front.C_Spread(C_spread.Date >= prev_date & C_spread.Date < expiry_front);
+%     else
+%         C_spread.C_Spread(C_spread.Date >= prev_date & C_spread.Date < last_front_date) = ...
+%         C_spread_front.C_Spread(C_spread.Date >= prev_date & C_spread.Date < last_front_date);
+%         % from the 15th of November to the expiry take the next December
+%         C_spread.C_Spread(C_spread.Date >= last_front_date & C_spread.Date < expiry_front) = ...
+%         C_spread_next.C_Spread(C_spread.Date >= last_front_date & C_spread.Date < expiry_front);
+%         % update the previous date
+% 
+%     end
+% prev_date = expiry_front;
+% 
+% end
+
+
+ %% Point 9.c.ii) Compute a single C_spread time series with a roll-over rule
 % 
 % % ***: this part is not really pretty, could be put into a function but it does not make a lot of sense
 % 
@@ -209,12 +242,12 @@ plot_C_Z_r(C_spread, Z_spread, risk_free_rate)
 
 %% Mean and Variance of the Z-Spread (only on dates before 2021)
 
-mean_Z_spread = mean(Z_spread.Z_Spread(Z_spread.Date < datetime(2021, 1, 1)));
-std_Z_spread = std(Z_spread.Z_Spread(Z_spread.Date < datetime(2021, 1, 1)));
+% mean_Z_spread = mean(Z_spread.Z_Spread(Z_spread.Date < datetime(2021, 1, 1)));
+% std_Z_spread = std(Z_spread.Z_Spread(Z_spread.Date < datetime(2021, 1, 1)));
 
 %% Mean and Variance of the Z-Spread (only on dates before 2022)
-% mean_Z_spread = mean(Z_spread.Z_Spread(Z_spread.Date < datetime(2022, 1, 1)));
-% std_Z_spread = std(Z_spread.Z_Spread(Z_spread.Date < datetime(2022, 1, 1)));
+mean_Z_spread = mean(Z_spread.Z_Spread(Z_spread.Date <= datetime(2022, 10, 28)));
+std_Z_spread = std(Z_spread.Z_Spread(Z_spread.Date <= datetime(2022, 10, 28)));
 
 % display the results
 disp(['The mean of the Z-Spread is: ', num2str(mean_Z_spread * 100), '%']);
@@ -226,23 +259,26 @@ disp(['The standard deviation of the Z-Spread is: ', num2str(std_Z_spread * 100)
 risk_free_rate = zrates(:,7);
 risk_free_rate = table(Daily_Future.Date, risk_free_rate, 'VariableNames', {'Date', 'Risk_Free_Rate'});
 
-mean_zrates = mean(risk_free_rate{dates(:,1) < datetime(2021, 1, 1),2});
-std_zrates = std(risk_free_rate{dates(:,1) < datetime(2021, 1, 1),2});
+% mean_zrates = mean(risk_free_rate{dates(:,1) < datetime(2021, 1, 1),2});
+% std_zrates = std(risk_free_rate{dates(:,1) < datetime(2021, 1, 1),2});
+
+mean_zrates = mean(risk_free_rate{dates(:,1) < datetime(2022, 10, 29),2});
+std_zrates = std(risk_free_rate{dates(:,1) < datetime(2021, 10, 29),2});
 
 disp(['The mean of the zero rates is: ', num2str(mean_zrates * 100), '%']);
 disp(['The standard deviation of the zero rates is: ', num2str(std_zrates * 100), '%']);
 
 %% Limit the data to the dates before 2021
 
-C_spread = C_spread(C_spread.Date < datetime(2021, 1, 1), :);
-Z_spread = Z_spread(Z_spread.Date < datetime(2021, 1, 1), :);
-risk_free_rate = risk_free_rate(dates(:,1) < datetime(2021, 1, 1), :);
+% C_spread = C_spread(C_spread.Date < datetime(2021, 1, 1), :);
+% Z_spread = Z_spread(Z_spread.Date < datetime(2021, 1, 1), :);
+% risk_free_rate = risk_free_rate(dates(:,1) < datetime(2021, 1, 1), :);
 
 %% Limit the data to the dates before October 2022
 
-% C_spread = C_spread(C_spread.Date <= datetime(2022,10,31), :);
-% Z_spread = Z_spread(Z_spread.Date <= datetime(2022,10,31), :);
-% risk_free_rate = risk_free_rate(dates(:, 1) < datetime(2022, 10, 31), :);
+ C_spread = C_spread(C_spread.Date <= datetime(2022,10,31), :);
+ Z_spread = Z_spread(Z_spread.Date <= datetime(2022,10,31), :);
+ risk_free_rate = risk_free_rate(dates(:, 1) < datetime(2022, 10, 31), :);
 
 %% Plot ACF and PACF of the Z-Spread and C-Spread
 
