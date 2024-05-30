@@ -384,25 +384,25 @@ Daily_Future = Daily_Future(ismember(Daily_Future.Date, extra_variables.Date), :
 % take the log return of the spot price
 log_returns = log(Daily_Future.Price(2:end) ./ Daily_Future.Price(1:end-1));
 
-GarchModel=garch(1,1);
-GarchModel=estimate(GarchModel,log_returns);
-E=infer(GarchModel,log_returns);
-v=E;
+% GarchModel=garch(1,1);
+% GarchModel=estimate(GarchModel,log_returns);
+% E=infer(GarchModel,log_returns);
+% v=E;
 
-% % fit the GARCH(1,1) model
-% mdl = garch(1,1);
-% 
-% % estimate the parameters
-% estMdl = estimate(mdl, log_returns(2:end), E0=log_returns(1));
-% 
-% % simulate the variance
-% numObs = length(log_returns);
-% 
-% % simulate the unconditional variance
-% v = simulate(estMdl, numObs, 'NumPaths', 1000);
-% 
-% % take the mean of the simulated variance
-% v = mean(v, 2);
+% fit the GARCH(1,1) model
+mdl = garch(1,1);
+
+% estimate the parameters
+estMdl = estimate(mdl, log_returns(2:end), E0=log_returns(1));
+
+% simulate the variance
+numObs = length(log_returns);
+
+% simulate the unconditional variance
+v = simulate(estMdl, numObs, 'NumPaths', 1000);
+
+% take the mean of the simulated variance
+v = mean(v, 2);
 
 % plot the variance
 figure;
