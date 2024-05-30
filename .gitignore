@@ -166,3 +166,4 @@ cython_debug/
 # PDF and txt
 *.pdf
 *.txt
+.DS_Store
