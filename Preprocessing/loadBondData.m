@@ -1,4 +1,4 @@
-function [Dates, Prices] = loadBondData(Bond, Issuers_data, start_date, end_date, target_dates)
+function [Dates, Prices, Issuers_data] = loadBondData(Bond, Issuers_data, start_date, end_date, target_dates)
 % LOADBONDDATA Load the bond data
 %
 % INPUTS:
