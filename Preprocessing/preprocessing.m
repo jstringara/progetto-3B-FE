@@ -42,3 +42,11 @@ Bonds = preprocessBonds(phase_IV_dates(1), phase_IV_dates(2), dates);
 
 % load the open interest data for the front and next contracts
 OpenInterest = preprocess_OI( phase_IV_dates(1), phase_IV_dates(2), Front_December);
+
+% load the extra variables
+Extra_Variables = preprocess_Extra_Variables(Daily_Future.Date);
+
+% take the log return of the daily future
+Daily_log_returns = log(Daily_Future.Price ./ lagmatrix(Daily_Future.Price, 1));
+
+clear front_expiry next_expiry dates
