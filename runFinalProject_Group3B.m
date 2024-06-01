@@ -86,9 +86,12 @@ risk_free_rate = RiskFreeRate(dates, zrates, Front_December.Expiry);
 C_spread_front = compute_C_Spread(Front_December, Daily_Future, risk_free_rate);
 C_spread_next = compute_C_Spread(Next_December, Daily_Future, risk_free_rate);
 
-%% Plot the two C-Spreads
+%% Plot the two C-Spreads for phase_III_dates
 
-plot_C_front_next(C_spread_front, C_spread_next)
+C_spread_Front_phase_III = C_spread_front(C_spread_front.Date < phase_III_dates(2), :);
+C_spread_Next_phase_III = C_spread_next(C_spread_next.Date < phase_III_dates(2), :);
+
+plot_C_front_next(C_spread_Front_phase_III, C_spread_Next_phase_III)
 
 %% Point 3.b) Compute a single C_spread time series with a roll-over rule
 
@@ -219,9 +222,11 @@ end
 
 %% Compute the Mean and the Standard Deviation of the C-Spread
 
+C_spread_phase_III = C_spread(C_spread.Date < phase_III_dates(2), :);
+
 % compute the Mean and the Standard Deviation of the C-Spread
-mean_C_spread = mean(C_spread.C_Spread);
-std_C_spread = std(C_spread.C_Spread);
+mean_C_spread = mean(C_spread_phase_III.C_Spread);
+std_C_spread = std(C_spread_phase_III.C_Spread);
 
 % display the results
 disp(['The mean of the C-Spread is: ', num2str(mean_C_spread * 100), '%']);
@@ -235,18 +240,17 @@ disp(['The standard deviation of the C-Spread is: ', num2str(std_C_spread * 100)
 
 Z_spread = compute_ZSpread(Bonds, dates, zrates);
 
-%% Plot the Z-Spread
+%% Plot the Z-Spread for the phase_III_dates
 
-plot_C_Z_r(C_spread, Z_spread, risk_free_rate)
+Z_spread_phase_III = Z_spread(Z_spread.Date < phase_III_dates(2), :);
+risk_free_rate_phase_III = risk_free_rate(dates(:,1) < phase_III_dates(2), :);
+
+plot_C_Z_r(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III)
 
 %% Mean and Variance of the Z-Spread (only on dates before 2021)
 
-mean_Z_spread = mean(Z_spread.Z_Spread(Z_spread.Date < datetime(2021, 1, 1)));
-std_Z_spread = std(Z_spread.Z_Spread(Z_spread.Date < datetime(2021, 1, 1)));
-
-%% Mean and Variance of the Z-Spread (only on dates before 2022)
-% mean_Z_spread = mean(Z_spread.Z_Spread(Z_spread.Date <= datetime(2022, 10, 28)));
-% std_Z_spread = std(Z_spread.Z_Spread(Z_spread.Date <= datetime(2022, 10, 28)));
+mean_Z_spread = mean(Z_spread_phase_III.Z_Spread);
+std_Z_spread = std(Z_spread_phase_III.Z_Spread);
 
 % display the results
 disp(['The mean of the Z-Spread is: ', num2str(mean_Z_spread * 100), '%']);
@@ -258,8 +262,11 @@ disp(['The standard deviation of the Z-Spread is: ', num2str(std_Z_spread * 100)
 risk_free_rate = zrates(:,7);
 risk_free_rate = table(Daily_Future.Date, risk_free_rate, 'VariableNames', {'Date', 'Risk_Free_Rate'});
 
-mean_zrates = mean(risk_free_rate{dates(:,1) < datetime(2021, 1, 1),2});
-std_zrates = std(risk_free_rate{dates(:,1) < datetime(2021, 1, 1),2});
+% filter the dates
+risk_free_rate_phase_III = risk_free_rate(risk_free_rate.Date < phase_III_dates(2), :);
+
+mean_zrates = mean(risk_free_rate_phase_III.Risk_Free_Rate);
+std_zrates = std(risk_free_rate_phase_III.Risk_Free_Rate);
 
 %mean_zrates = mean(risk_free_rate{dates(:,1) < datetime(2022, 10, 29),2});
 %std_zrates = std(risk_free_rate{dates(:,1) < datetime(2022, 10, 29),2});
@@ -267,52 +274,52 @@ std_zrates = std(risk_free_rate{dates(:,1) < datetime(2021, 1, 1),2});
 disp(['The mean of the zero rates is: ', num2str(mean_zrates * 100), '%']);
 disp(['The standard deviation of the zero rates is: ', num2str(std_zrates * 100), '%']);
 
-%% Limit the data to the dates before 2021
-
-C_spread = C_spread(C_spread.Date < datetime(2021, 1, 1), :);
-Z_spread = Z_spread(Z_spread.Date < datetime(2021, 1, 1), :);
-risk_free_rate = risk_free_rate(dates(:,1) < datetime(2021, 1, 1), :);
-
-%% Limit the data to the dates before October 2022
-
-% C_spread = C_spread(C_spread.Date <= datetime(2022,10,31), :);
-% Z_spread = Z_spread(Z_spread.Date <= datetime(2022,10,31), :);
-% risk_free_rate = risk_free_rate(dates(:, 1) < datetime(2022, 10, 31), :);
-
 %% Plot ACF and PACF of the Z-Spread and C-Spread
 
 % plot the ACF and PACF
-% plot_ACF_PACF(Z_spread, 'Z-Spread')
-% plot_ACF_PACF(C_spread, 'C-Spread')
-% plot_ACF_PACF(risk_free_rate, 'Risk-Free Rate')
+% plot_ACF_PACF(Z_spread_phase_III, 'Z-Spread')
+% plot_ACF_PACF(C_spread_phase_III, 'C-Spread')
+% plot_ACF_PACF(risk_free_rate_phase_III, 'Risk-Free Rate')
 
 %% Check that they are all integrated of order 1
 
-% % load the python function from the file
-% econometrics = py.importlib.import_module('Python.econometrics');
-%
-% % compute the ADF test for the C-Spread
-% res = econometrics.compute_ADF( ...
-%     py.dict(Date=py.list(C_spread.Date), C_Spread=py.list(C_spread.C_Spread)), ...
-%     py.dict(Date=py.list(Z_spread.Date), Z_Spread=py.list(Z_spread.Z_Spread)), ...
-%     py.dict(Date=py.list(C_spread.Date), Risk_Free_Rate=py.list(risk_free_rate.Risk_Free_Rate)) ...
-% );
-%
-% disp(res)
+% perform the ADF test
+z_spread_res = adftest(Z_spread_phase_III.Z_Spread);
+z_spread_res_diff = adftest(diff(Z_spread_phase_III.Z_Spread));
+
+if z_spread_res == 0 && z_spread_res_diff == 1
+    disp('The Z-Spread is integrated of order 1')
+else
+    disp('The Z-Spread is not integrated of order 1')
+end
+
+c_spread_res = adftest(C_spread_phase_III.C_Spread);
+c_spread_res_diff = adftest(diff(C_spread_phase_III.C_Spread));
+
+if c_spread_res == 0 && c_spread_res_diff == 1
+    disp('The C-Spread is integrated of order 1')
+else
+    disp('The C-Spread is not integrated of order 1')
+end
+
+risk_free_rate_res = adftest(risk_free_rate_phase_III.Risk_Free_Rate);
+risk_free_rate_res_diff = adftest(diff(risk_free_rate_phase_III.Risk_Free_Rate));
+
+if risk_free_rate_res == 0 && risk_free_rate_res_diff == 1
+    disp('The Risk-Free Rate is integrated of order 1')
+else
+    disp('The Risk-Free Rate is not integrated of order 1')
+end
 
 %% Johansen Test to find cointegration between these three
 
-% C_spread.C_Spread = C_spread.C_Spread(Z_spread.Date);
-% risk_free_rate.Risk_Free_Rate = risk_free_rate.Risk_Free_Rate(Z_spread.Date);
-% C_spread.Date = C_spread.Date(Z_spread.Date);
-% risk_free_rate.Date = risk_free_rate.Date(Z_spread.Date);
 Y = table( ...
-    C_spread.Date, ...
-    C_spread.C_Spread, ...
-    Z_spread.Z_Spread, ...
-    risk_free_rate.Risk_Free_Rate, ...
+    C_spread_phase_III.Date, ...
+    C_spread_phase_III.C_Spread, ...
+    Z_spread_phase_III.Z_Spread, ...
+    risk_free_rate_phase_III.Risk_Free_Rate, ...
     'VariableNames', {'Date', 'C_Spread', 'Z_Spread', 'Risk_Free_Rate'} ...
-    );
+);
 
 Y_mat = [Y.C_Spread, Y.Z_Spread, Y.Risk_Free_Rate];
 
@@ -337,14 +344,14 @@ ect = Y_mat * B;
 %% Compute the Cointegration between the Z-Spread and the C-Spread
 
 % build the lagged difference of the C-Spread
-Delta_C = diff(C_spread.C_Spread);
+Delta_C = [NaN; diff(C_spread_phase_III.C_Spread)];
 
-plot_ACF_PACF(Delta_C, 'Delta_C')
+% plot_ACF_PACF(Delta_C, '\Delta C')
 
 %% Error correction model
 
-Delta_Z = diff(Z_spread.Z_Spread);
-Delta_r = diff(risk_free_rate.Risk_Free_Rate);
+Delta_Z = [NaN; diff(Z_spread_phase_III.Z_Spread)];
+Delta_r = [NaN; diff(risk_free_rate_phase_III.Risk_Free_Rate)];
 
 % lagged values of Delta_C
 Delta_C_lag1 = lagmatrix(Delta_C, 1);
@@ -354,128 +361,84 @@ Delta_C_lag3 = lagmatrix(Delta_C, 3);
 % lagged value of ect
 ect_lag1 = lagmatrix(ect, 1);
 
-% load the extra variables
-extra_variables = readtable('Extra_Variables.csv');
-
-% transform the dates into datetime
-% format is weekday full name, month full name day, full year
-date_format = 'eeee, MMMM d, yyyy';
-extra_variables.Date = string(extra_variables.Date);
-extra_variables.Date = datetime(extra_variables.Date, 'InputFormat', date_format);
-
-% filter them by the dates to match the other variables
-extra_variables = extra_variables(ismember(extra_variables.Date, C_spread.Date), :);
-
-% keep only the columns 'SPX', 'VIX', 'WTI'
-extra_variables = extra_variables(:, {'Date', 'SPX', 'VIX', 'WTI'});
-
-% fill the missing values with the previous value
-% HACK: there was a negative price for the WTI, we manually set it to NaN
-extra_variables = fillmissing(extra_variables, 'previous');
-
 %% GARCh(1,1) model for the variance of the log return of the spot price of the EUA futures
 
 % build a GARCH(1,1) model for the variance of the log return of the spot price
 % of the EUA futures
 
-% filter the Daily_Future to match the dates of the extra variables
-Daily_Future = Daily_Future(ismember(Daily_Future.Date, extra_variables.Date), :);
-
-% take the log return of the spot price
-log_returns = log(Daily_Future.Price(2:end) ./ Daily_Future.Price(1:end-1));
-
-GarchModel=garch(1,1);
-GarchModel=estimate(GarchModel,log_returns);
-E=infer(GarchModel,log_returns);
-v=E;
-
-% % fit the GARCH(1,1) model
-% mdl = garch(1,1);
-% 
-% % estimate the parameters
-% estMdl = estimate(mdl, log_returns(2:end), E0=log_returns(1));
-% 
-% % simulate the variance
-% numObs = length(log_returns);
-% 
-% % simulate the unconditional variance
-% v = simulate(estMdl, numObs, 'NumPaths', 1000);
-% 
-% % take the mean of the simulated variance
-% v = mean(v, 2);
+GarchModel = garch(1,1);
+GarchModel = estimate(GarchModel,Daily_log_returns);
+E = infer(GarchModel,Daily_log_returns);
+v = [NaN; E]; % pad with a NaN to match the size of the returns
 
 % plot the variance
 figure;
-plot(Daily_Future.Date(2:end), log_returns.^2, 'LineWidth', 1.5)
+plot(Daily_Future.Date, Daily_log_returns.^2, 'LineWidth', 1.5)
 hold on
-plot(Daily_Future.Date(2:end), v, 'LineWidth', 1.5)
+plot(Daily_Future.Date, v, 'LineWidth', 1.5)
 title('Simulated Variance of the Log Returns of the EUA Futures')
 legend('Realized Variance', 'GARCH(1,1) Variance')
 xlabel('Date')
+
+% use only the phase_III_dates
+v_phase_III = v(Daily_Future.Date < phase_III_dates(2));
 
 %% EWMA model
 
 % compute the EWMA
 lambda = 0.95;
-v_ewma = zeros(length(log_returns), 1);
-v_ewma(1) = var(log_returns);
+v_ewma = zeros(length(Daily_log_returns), 1);
+v_ewma(1) = var(Daily_log_returns, 'omitnan');
 
-for i = 2:length(log_returns)
-    v_ewma(i) = lambda * v_ewma(i-1) + (1 - lambda) * log_returns(i)^2;
+for i = 2:length(Daily_log_returns)
+    v_ewma(i) = lambda * v_ewma(i-1) + (1 - lambda) * Daily_log_returns(i)^2;
 end
 
 % plot the variance
 figure;
-plot(Daily_Future.Date(2:end), log_returns.^2, 'LineWidth', 1.5)
+plot(Daily_Future.Date, Daily_log_returns.^2, 'LineWidth', 1.5)
 hold on
-plot(Daily_Future.Date(2:end), v_ewma, 'LineWidth', 1.5)
+plot(Daily_Future.Date, v_ewma, 'LineWidth', 1.5)
 title('EWMA Variance of the Log Returns of the EUA Futures')
 legend('Realized Variance', 'EWMA Variance')
 xlabel('Date')
 
+% use only the phase_III_dates
+v_ewma_phase_III = v_ewma(Daily_Future.Date < phase_III_dates(2));
+
 %% Pearson correlation test
 
-% X= table( ...
-%     log(extra_variables.SPX(2:end) ./ extra_variables.SPX(1:end-1)), ...
-%     extra_variables.VIX(2:end), ...
-%     log(extra_variables.WTI(2:end) ./ extra_variables.WTI(1:end-1)), ...
-%     v, ...
-%     'VariableNames', {'log_SPX', 'VIX','log_WTI','GARCH'} ...
-% );
-X=[log(extra_variables.SPX(2:end) ./ extra_variables.SPX(1:end-1)),extra_variables.VIX(2:end),log(extra_variables.WTI(2:end) ./ extra_variables.WTI(1:end-1)),v];
-% Verifica se ci sono valori complessi
-% hasComplexValues = false;
-% vars = X.Properties.VariableNames; % Ottiene i nomi delle variabili (colonne) della tabella
-%
-% for i = 1:numel(vars)
-%     varData = X.(vars{i}); % Estrae i dati della colonna i
-%     if any(imag(varData(:)) ~= 0) % Controlla se ci sono parti immaginarie non zero
-%         hasComplexValues = true;
-%         fprintf('La colonna "%s" contiene valori complessi.\n', vars{i});
-%     end
-% end
+% build the matrix to compute the correlation
+X = [Extra_Variables.SPX, Extra_Variables.VIX, Extra_Variables.WTI, v];
 
-[cor_coeff,P_value_coeff]=corrcoef(X);
-disp(['The matrix correlation coefficients of the extravariables is:'])
+% delete the nan values
+X = rmmissing(X);
+
+[cor_coeff,P_value_coeff] = corrcoef(X);
+
+disp('The matrix correlation coefficients of the extravariables is:')
 disp(cor_coeff)
-disp(['The P-values of the correlation coefficients of the extravariables is:'])
+disp('The P-values of the correlation coefficients of the extravariables is:')
 disp(P_value_coeff)
 
 %% Error correction model
 
-% build the table with the variables
+% filter the extra varibles to use only phase_III_dates
+Extra_Variables_phase_III = Extra_Variables(Extra_Variables.Date < phase_III_dates(2), :);
+
+% build the table with the necessary variables
 Y = table( ...
     Delta_C_lag1, ...
     Delta_C_lag2, ...
     Delta_C_lag3, ...
     Delta_Z, ...
     Delta_r, ...
-    ect_lag1(2:end), ...
-    log(extra_variables.WTI(2:end) ./ extra_variables.WTI(1:end-1)), ...
-    log(extra_variables.SPX(2:end) ./ extra_variables.SPX(1:end-1)), ...
-    extra_variables.VIX(2:end), ...
-    v, ...
-    v_ewma, ...
+    ect_lag1, ...
+    Extra_Variables_phase_III.WTI, ...
+    Extra_Variables_phase_III.SPX, ...
+    Extra_Variables_phase_III.VIX, ...
+    v_phase_III, ...
+    v_ewma_phase_III, ...
     Delta_C, ...
     'VariableNames', {'Delta_C_lag1', 'Delta_C_lag2', 'Delta_C_lag3', 'Delta_Z', 'Delta_r', ...
     'ect_lag1', 'log_WTI', 'log_SPX', 'VIX', 'GARCH', 'EWMA', 'Delta_C' } ...
@@ -484,7 +447,7 @@ Y = table( ...
 % remove nan values
 Y = rmmissing(Y);
 
-%% General Model with the GARCH variance
+%% General Model with the GARCH variance (Phase III)
 
 % fit the model
 mdl = fitlm(Y, ...
@@ -499,6 +462,7 @@ AIC = mdl.ModelCriterion.AIC;
 BIC = mdl.ModelCriterion.BIC;
 
 %% Model 1 with the GARCH variance
+
 % fit the model
 mdl = fitlm(Y(:,[1:3,6,12]), ...
     'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + ect_lag1', ...
@@ -512,6 +476,7 @@ AIC = mdl.ModelCriterion.AIC;
 BIC = mdl.ModelCriterion.BIC;
 
 %% Model 2 with the GARCH variance
+
 % fit the model
 mdl = fitlm(Y(:,[1:6,12]), ...
     'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r +ect_lag1', ...
