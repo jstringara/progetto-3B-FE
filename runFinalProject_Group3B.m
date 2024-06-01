@@ -61,7 +61,7 @@ grouping = [
     3*ones(height(Front_December),1)
     ];
 
-plot_Volumes_fronts_months(Volumes_fronts_months, grouping)
+% plot_Volumes_fronts_months(Volumes_fronts_months, grouping)
 
 % boxplot of the December front and next
 
@@ -77,7 +77,7 @@ grouping = [
     2*ones(height(Next_2_December),1)
     ];
 
-plot_Volumes_december(Volumes_dec, grouping)
+% plot_Volumes_december(Volumes_dec, grouping)
 
 %% Point 3) compute the C-Spread for the EUA futures
 
@@ -91,7 +91,7 @@ C_spread_next = compute_C_Spread(Next_December, Daily_Future, risk_free_rate);
 C_spread_Front_phase_III = C_spread_front(C_spread_front.Date < phase_III_dates(2), :);
 C_spread_Next_phase_III = C_spread_next(C_spread_next.Date < phase_III_dates(2), :);
 
-plot_C_front_next(C_spread_Front_phase_III, C_spread_Next_phase_III)
+% plot_C_front_next(C_spread_Front_phase_III, C_spread_Next_phase_III)
 
 %% Point 3.b) Compute a single C_spread time series with roll-over rule of 15th of November
 
@@ -119,14 +119,14 @@ risk_free_rate_phase_III = risk_free_rate(risk_free_rate.Date < phase_III_dates(
 
 %% Point 6.1) Plot the C-Spread, Z-Spread and the Risk-Free Rate
 
-plot_C_Z_r(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III)
+% plot_C_Z_r(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III)
 
 %% Point 6.2) Plot ACF and PACF of the Z-Spread and C-Spread
 
 % plot the ACF and PACF
-plot_ACF_PACF(Z_spread_phase_III, 'Z-Spread')
-plot_ACF_PACF(C_spread_phase_III, 'C-Spread')
-plot_ACF_PACF(risk_free_rate_phase_III, 'Risk-Free Rate')
+% plot_ACF_PACF(Z_spread_phase_III, 'Z-Spread')
+% plot_ACF_PACF(C_spread_phase_III, 'C-Spread')
+% plot_ACF_PACF(risk_free_rate_phase_III, 'Risk-Free Rate')
 
 %% Point 6.3) Mean and Variance of all three series for phase III
 
@@ -242,7 +242,22 @@ Delta_C = [NaN; diff(C_spread.C_Spread)];
 
 % plot_ACF_PACF(Delta_C, '\Delta C')
 
-%% Point 8.3) Error correction model
+%% Point 8.3) Pearson correlation test
+
+% build the matrix to compute the correlation
+X = [Extra_Variables.SPX, Extra_Variables.VIX, Extra_Variables.WTI, v_garch];
+
+% delete the nan values
+X = rmmissing(X);
+
+[cor_coeff,P_value_coeff] = corrcoef(X);
+
+disp('The matrix correlation coefficients of the extravariables is:')
+disp(cor_coeff)
+disp('The P-values of the correlation coefficients of the extravariables is:')
+disp(P_value_coeff)
+
+%% Point 8.4) Error correction model
 
 Y_phase_III = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phase_III, ...
     Extra_Variables, v_garch, phase_III_dates(2));
@@ -250,6 +265,98 @@ Y_phase_III = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phas
 % fit the model
 mdl = fitlm(Y_phase_III, ...
     'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + WTI + SPX + VIX + Volatility' ...
+);
+
+% print the summary
+disp(mdl)
+
+% get the AIC and BIC
+AIC = mdl.ModelCriterion.AIC;
+BIC = mdl.ModelCriterion.BIC;
+
+% display AIC and BIC
+disp(['The AIC of the model is: ', num2str(AIC)]);
+disp(['The BIC of the model is: ', num2str(BIC)]);
+
+%% Point 8.5 Various models
+
+%% Model I
+
+% fit the model
+mdl = fitlm(Y_phase_III, ...
+    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + ect_lag1' ...
+);
+
+% print the summary
+disp(mdl)
+
+% get the AIC and BIC
+AIC = mdl.ModelCriterion.AIC;
+BIC = mdl.ModelCriterion.BIC;
+
+% display AIC and BIC
+disp(['The AIC of the model is: ', num2str(AIC)]);
+disp(['The BIC of the model is: ', num2str(BIC)]);
+
+%% Model II
+
+% fit the model
+mdl = fitlm(Y_phase_III, ...
+    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r +ect_lag1' ...
+);
+
+% print the summary
+disp(mdl)
+
+% get the AIC and BIC
+AIC = mdl.ModelCriterion.AIC;
+BIC = mdl.ModelCriterion.BIC;
+
+% display AIC and BIC
+disp(['The AIC of the model is: ', num2str(AIC)]);
+disp(['The BIC of the model is: ', num2str(BIC)]);
+
+%% Model III
+
+% fit the model
+mdl = fitlm(Y_phase_III, ...
+    'Delta_C ~ WTI' ...
+);
+
+% print the summary
+disp(mdl)
+
+% get the AIC and BIC
+AIC = mdl.ModelCriterion.AIC;
+BIC = mdl.ModelCriterion.BIC;
+
+% display AIC and BIC
+disp(['The AIC of the model is: ', num2str(AIC)]);
+disp(['The BIC of the model is: ', num2str(BIC)]);
+
+%% Model IV
+
+% fit the model
+mdl = fitlm(Y_phase_III, ...
+    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r +ect_lag1 + WTI' ...
+);
+
+% print the summary
+disp(mdl)
+
+% get the AIC and BIC
+AIC = mdl.ModelCriterion.AIC;
+BIC = mdl.ModelCriterion.BIC;
+
+% display AIC and BIC
+disp(['The AIC of the model is: ', num2str(AIC)]);
+disp(['The BIC of the model is: ', num2str(BIC)]);
+
+%% Model V
+
+% fit the model
+mdl = fitlm(Y_phase_III, ...
+    'Delta_C ~ WTI + SPX + VIX + Volatility' ...
 );
 
 % print the summary
@@ -286,119 +393,13 @@ xlabel('Date')
 % use only the phase_III_dates
 v_ewma_phase_III = v_ewma(Daily_Future.Date < phase_III_dates(2));
 
-%% Pearson correlation test
+%% Point 9.a) Robustness check with the EWMA variance
 
-% build the matrix to compute the correlation
-X = [Extra_Variables.SPX, Extra_Variables.VIX, Extra_Variables.WTI, v];
-
-% delete the nan values
-X = rmmissing(X);
-
-[cor_coeff,P_value_coeff] = corrcoef(X);
-
-disp('The matrix correlation coefficients of the extravariables is:')
-disp(cor_coeff)
-disp('The P-values of the correlation coefficients of the extravariables is:')
-disp(P_value_coeff)
-
-%% Error correction model
-
-
-
-%% Model 1 with the GARCH variance
-
-% fit the model
-mdl = fitlm(Y_phase_III, ...
-    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + ect_lag1' ...
-);
-
-% print the summary
-disp(mdl)
-
-% get the AIC and BIC
-AIC = mdl.ModelCriterion.AIC;
-BIC = mdl.ModelCriterion.BIC;
-
-% display AIC and BIC
-disp(['The AIC of the model is: ', num2str(AIC)]);
-disp(['The BIC of the model is: ', num2str(BIC)]);
-
-%% Model 2
-
-% fit the model
-mdl = fitlm(Y_phase_III, ...
-    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r +ect_lag1' ...
-);
-
-% print the summary
-disp(mdl)
-
-% get the AIC and BIC
-AIC = mdl.ModelCriterion.AIC;
-BIC = mdl.ModelCriterion.BIC;
-
-% display AIC and BIC
-disp(['The AIC of the model is: ', num2str(AIC)]);
-disp(['The BIC of the model is: ', num2str(BIC)]);
-
-%% Model 3
-
-% fit the model
-mdl = fitlm(Y_phase_III, ...
-    'Delta_C ~ log_WTI' ...
-);
-
-% print the summary
-disp(mdl)
-
-% get the AIC and BIC
-AIC = mdl.ModelCriterion.AIC;
-BIC = mdl.ModelCriterion.BIC;
-
-% display AIC and BIC
-disp(['The AIC of the model is: ', num2str(AIC)]);
-disp(['The BIC of the model is: ', num2str(BIC)]);
-
-%% Model 4
-
-% fit the model
-mdl = fitlm(Y_phase_III, ...
-    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r +ect_lag1 +log_WTI' ...
-);
-
-% print the summary
-disp(mdl)
-
-% get the AIC and BIC
-AIC = mdl.ModelCriterion.AIC;
-BIC = mdl.ModelCriterion.BIC;
-
-% display AIC and BIC
-disp(['The AIC of the model is: ', num2str(AIC)]);
-disp(['The BIC of the model is: ', num2str(BIC)]);
-
-%% Model 5 with the GARCH variance
-
-% fit the model
-mdl = fitlm(Y_phase_III, ...
-    'Delta_C ~ log_WTI + log_SPX + VIX + GARCH' ...
-);
-
-% print the summary
-disp(mdl)
-
-% get the AIC and BIC
-AIC = mdl.ModelCriterion.AIC;
-BIC = mdl.ModelCriterion.BIC;
-
-% display AIC and BIC
-disp(['The AIC of the model is: ', num2str(AIC)]);
-disp(['The BIC of the model is: ', num2str(BIC)]);
-
-%% Model with the EWMA variance
+Y_phase_III = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phase_III, ...
+    Extra_Variables, v_ewma, phase_III_dates(2));
 
 mdl = fitlm(Y_phase_III, ...
-    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + log_WTI + log_SPX + VIX + EWMA' ...
+    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + WTI + SPX + VIX + Volatility' ...
 );
 
 disp(mdl)
