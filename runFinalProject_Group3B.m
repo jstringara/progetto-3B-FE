@@ -482,62 +482,70 @@ BIC = mdl.ModelCriterion.BIC;
 disp(['The AIC of the model for phase IV is: ', num2str(AIC)]);
 disp(['The BIC of the model for phase IV is: ', num2str(BIC)]);
 
-%% Quantile regression
+%% Point 10) Quantile regression
 
-y=Delta_C(4:end);
-%fi([], 1, 16)
-x=[Delta_C_lag1, ...
-    Delta_C_lag2, ...
-    Delta_C_lag3, ...
-    Delta_Z, ...
-    Delta_r, ...
-    ect_lag1(2:end), ...
-    log(extra_variables.WTI(2:end) ./ extra_variables.WTI(1:end-1)), ...
-    log(extra_variables.SPX(2:end) ./ extra_variables.SPX(1:end-1)), ...
-    extra_variables.VIX(2:end), ...
-    v];
-x=x(4:end,:);
-l = length(y);
+%% Point 10.1) Model IV
 
-figure(6)
-plot([1:l], y, 'DisplayName', 'y') % Aggiunge la legenda per y
-hold on
+% construct the table for the quantile regression
+Y_qr = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phase_III, ...
+    Extra_Variables, v_garch, phase_III_dates(2));
 
-% Define color map
-colors = lines(5);
+% create the matrices for the quantile regression
+y = Y_qr.Delta_C;
+
+x = [
+    Y_qr.Delta_C_lag1, Y_qr.Delta_C_lag2, Y_qr.Delta_C_lag3, ...
+    Y_qr.Delta_Z, Y_qr.Delta_r, Y_qr.ect_lag1, ...
+    Y_qr.WTI, Y_qr.SPX, Y_qr.VIX, Y_qr.Volatility
+    ];
+
+% estimate matrix to store the estimates
+estimates = zeros(width(x) + 1, 8);
+pvalues = zeros(width(x) + 1, 8);
 
 for i = 1:4
+
     figure;
+
+    % Plot the real y in black
     l = length(y);
-    
-    % Plot y with black
-    plot([1:l], y, 'DisplayName', 'y', 'Color', 'k')
+    plot(1:l, y, 'DisplayName', 'y', 'Color', 'k')
     hold on
     
-     % First line (tau = 0.1 * i)
-    tau1 = 0.1 * i;
-    [estimate1, pvalue1, j1] = qr_standard(x, y, tau1, 'test', 'kernel', 'maxit', 5000, 'tol', 1e-10);
-    y_quantile1 = estimate1(1) + x * estimate1(2:11);
+     % First bound (tau = 0.1 * i)
+    tau_lb = 0.1 * i;
+    [estimate_lb, pvalue_lb, j_lb] = qr_standard(x, y, tau1, 'test', 'kernel', 'maxit', 5000, 'tol', 1e-10);
+    y_quantile_lb = estimate1(1) + x * estimate1(2:end);
+
+    % save the estimate and pvalue in the appropriate column of the matrix
+    estimates(:, i) = estimate_lb;
+    pvalues(:, i) = pvalue_lb;
     
-    % Assign a specific color
-    if i == 1
-        plot_color = [0, 0.4470, 0.7410]; % Change the color with respect to the map
-    else
-        plot_color = colors(i, :);
-    end
+    % % Assign a specific color
+    % if i == 1
+    %     plot_color = [0, 0.4470, 0.7410]; % Change the color with respect to the map
+    % else
+    %     plot_color = colors(i, :);
+    % end
     
-    plot([1:l], y_quantile1, 'DisplayName', ['y\_quantile for tau = ', num2str(tau1)], 'Color', plot_color)
+    plot(1:l, y_quantile_lb, 'DisplayName', ['y\_quantile for tau = ', num2str(tau_lb)])
     
     % Opposite line (tau = 0.1 * (10 - i))
-    tau2 = 0.1 * (10 - i);
-    [estimate2, pvalue2, j2] = qr_standard(x, y, tau2, 'test', 'kernel', 'maxit', 5000, 'tol', 1e-10);
-    y_quantile2 = estimate2(1) + x * estimate2(2:11);
+    tau_ub = 0.1 * (10 - i);
+    [estimate_ub, pvalue_ub, j_ub] = qr_standard(x, y, tau_ub, 'test', 'kernel', 'maxit', 5000, 'tol', 1e-10);
+    y_quantile_ub = estimate_ub(1) + x * estimate_ub(2:end);
+
+    % save the estimate and pvalue in the appropriate column of the matrix
+    estimates(:, 9 - i) = estimate_ub;
+    pvalues(:, 9 - i) = pvalue_ub;
     
     % Use the same color for the opposite value
-    plot([1:l], y_quantile2, 'DisplayName', ['y\_quantile for tau = ', num2str(tau2)], 'Color', plot_color)
+    plot(1:l, y_quantile_ub, 'DisplayName', ['y\_quantile for tau = ', num2str(tau_ub)])
     
-    legend show % Show the legend
-    title(['Plot for tau = ', num2str(tau1), ' and tau = ', num2str(tau2)])
+    title(['Plot for tau = ', num2str(tau_lb), ' and tau = ', num2str(tau_ub)])
+
+    legend('Location', 'best')
+
 end
 
 
