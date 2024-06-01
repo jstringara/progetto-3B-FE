@@ -25,6 +25,7 @@ addpath('Bootstrap');
 addpath('Spreads');
 addpath('Python');
 addpath('Plot');
+addpath('Regression');
 addpath('QR');
 
 % set the python environment
@@ -187,30 +188,7 @@ end
 
 %% Point 7) Johansen Test to find cointegration between these three
 
-Y_joc = table( ...
-    C_spread_phase_III.Date, ...
-    C_spread_phase_III.C_Spread, ...
-    Z_spread_phase_III.Z_Spread, ...
-    risk_free_rate_phase_III.Risk_Free_Rate, ...
-    'VariableNames', {'Date', 'C_Spread', 'Z_Spread', 'Risk_Free_Rate'} ...
-);
-
-Y_joc_mat = [Y_joc.C_Spread, Y_joc.Z_Spread, Y_joc.Risk_Free_Rate];
-
-% Johansen test
-[h,pValue,stat,cValue,mles] = jcitest(Y_joc_mat, ...
-    Test=["trace" "maxeig"], Display="summary", Model="H2");
-
-params = mles.r1.paramVals;
-B = params.B;
-
-% nomalize
-B = B / B(1);
-
-% write and plot the cointegration vectors
-disp(['{' num2str(B(1)) ', ' num2str(B(2)) ', ' num2str(B(3)) '}'])
-
-ect_phase_III = Y_joc_mat * B;
+ect_phase_III = computeECT(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III);
 
 % test the stationarity of the error correction term
 %[h,pValue,stat,cValue,mles] = adftest(ect, 'Display', 'summary');
@@ -232,9 +210,6 @@ plot(Daily_Future.Date, v_garch, 'LineWidth', 1.5)
 title('Simulated Variance of the Log Returns of the EUA Futures')
 legend('Realized Variance', 'GARCH(1,1) Variance')
 xlabel('Date')
-
-% use only the phase_III_dates
-v_garch_phase_III = v_garch(Daily_Future.Date < phase_III_dates(2));
 
 %% Point 8.2) Plot the ACF and PACF of Delta C
 
@@ -411,18 +386,101 @@ BIC = mdl.ModelCriterion.BIC;
 disp(['The AIC of the model with EWMA is: ', num2str(AIC)]);
 disp(['The BIC of the model with EWMA is: ', num2str(BIC)]);
 
-%% Point 9.c.i) Compute a single C_spread time series with a Open Interest rule
+%% Point 9.b) Use Phase IV
+
+%% Point 9.b.1) Estimate the error correction term for phase IV
+
+ect_phase_IV = computeECT(C_spread, Z_spread, risk_free_rate);
+
+%% Point 9.b.2) Estimate the error correction model for phase IV
+
+Y_phase_IV = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phase_IV, ...
+    Extra_Variables, v_garch, phase_IV_dates(2));
+
+mdl = fitlm(Y_phase_IV, ...
+    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + WTI + SPX + VIX + Volatility' ...
+);
+
+disp(mdl)
+
+% get the AIC and BIC
+AIC = mdl.ModelCriterion.AIC;
+BIC = mdl.ModelCriterion.BIC;
+
+disp(['The AIC of the model for phase IV is: ', num2str(AIC)]);
+disp(['The BIC of the model for phase IV is: ', num2str(BIC)]);
+
+%% Point 9.c.i) Switch with Open Interest roll-over rule
 
 C_spread = aggregate_C_Spread(Front_December, C_spread_front, Next_December, C_spread_next, 2, OpenInterest);
+
+% compute the ECT
+ect_phase_III = computeECT(C_spread, Z_spread, risk_free_rate);
+
+% compute the regression
+Y_phase_III = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phase_III, ...
+    Extra_Variables, v_garch, phase_III_dates(2));
+
+mdl = fitlm(Y_phase_III, ...
+    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + WTI + SPX + VIX + Volatility' ...
+);
+
+disp(mdl)
+
+% get the AIC and BIC
+AIC = mdl.ModelCriterion.AIC;
+BIC = mdl.ModelCriterion.BIC;
+
+disp(['The AIC of the model for phase IV is: ', num2str(AIC)]);
+disp(['The BIC of the model for phase IV is: ', num2str(BIC)]);
 
 %% Point 9.c.ii) Compute a single C_spread time series with a roll-over rule one month before the expiry
 
 C_spread = aggregate_C_Spread(Front_December, C_spread_front, Next_December, C_spread_next, 3, OpenInterest);
 
+% compute the ECT
+ect_phase_III = computeECT(C_spread, Z_spread, risk_free_rate);
+
+% compute the regression
+Y_phase_III = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phase_III, ...
+    Extra_Variables, v_garch, phase_III_dates(2));
+
+mdl = fitlm(Y_phase_III, ...
+    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + WTI + SPX + VIX + Volatility' ...
+);
+
+disp(mdl)
+
+% get the AIC and BIC
+AIC = mdl.ModelCriterion.AIC;
+BIC = mdl.ModelCriterion.BIC;
+
+disp(['The AIC of the model for phase IV is: ', num2str(AIC)]);
+disp(['The BIC of the model for phase IV is: ', num2str(BIC)]);
+
 %% Point 9.c.iii) Compute a single C_spread time series with a roll-over rule
 
 C_spread = aggregate_C_Spread(Front_December, C_spread_front, Next_December, C_spread_next, 4, OpenInterest);
 
+% compute the ECT
+ect_phase_III = computeECT(C_spread, Z_spread, risk_free_rate);
+
+% compute the regression
+Y_phase_III = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phase_III, ...
+    Extra_Variables, v_garch, phase_III_dates(2));
+
+mdl = fitlm(Y_phase_III, ...
+    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + WTI + SPX + VIX + Volatility' ...
+);
+
+disp(mdl)
+
+% get the AIC and BIC
+AIC = mdl.ModelCriterion.AIC;
+BIC = mdl.ModelCriterion.BIC;
+
+disp(['The AIC of the model for phase IV is: ', num2str(AIC)]);
+disp(['The BIC of the model for phase IV is: ', num2str(BIC)]);
 
 %% Quantile regression
 
