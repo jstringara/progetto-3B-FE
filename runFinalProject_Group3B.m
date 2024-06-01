@@ -215,50 +215,53 @@ ect_phase_III = Y_joc_mat * B;
 % test the stationarity of the error correction term
 %[h,pValue,stat,cValue,mles] = adftest(ect, 'Display', 'summary');
 
-%% Compute the Cointegration between the Z-Spread and the C-Spread
-
-% build the lagged difference of the C-Spread
-Delta_C = [NaN; diff(C_spread.C_Spread)];
-Delta_C_phase_III = Delta_C(Daily_Future.Date < phase_III_dates(2));
-
-% plot_ACF_PACF(Delta_C, '\Delta C')
-
-%% Error correction model
-
-Delta_Z = [NaN; diff(Z_spread.Z_Spread)];
-Delta_Z_phase_III = [NaN; diff(Z_spread_phase_III.Z_Spread)];
-Delta_r = [NaN; diff(risk_free_rate.Risk_Free_Rate)];
-Delta_r_phase_III = [NaN; diff(risk_free_rate_phase_III.Risk_Free_Rate)];
-
-% lagged values of Delta_C
-Delta_C_lag1_phase_III = lagmatrix(Delta_C_phase_III, 1);
-Delta_C_lag2_phase_III = lagmatrix(Delta_C_phase_III, 2);
-Delta_C_lag3_phase_III = lagmatrix(Delta_C_phase_III, 3);
-
-% lagged value of ect
-ect_lag1_phase_III = lagmatrix(ect_phase_III, 1);
-
-%% GARCh(1,1) model for the variance of the log return of the spot price of the EUA futures
+%% Point 8.1) GARCh(1,1) model for the variance of the log return of the spot price of the EUA futures
 
 % build a GARCH(1,1) model for the variance of the log return of the spot price
 % of the EUA futures
-
-GarchModel = garch(1,1);
-GarchModel = estimate(GarchModel,Daily_log_returns);
-E = infer(GarchModel,Daily_log_returns);
-v = [NaN; E]; % pad with a NaN to match the size of the returns
+GarchModel = garch(1, 1);
+GarchModel = estimate(GarchModel, Daily_log_returns);
+E = infer(GarchModel, Daily_log_returns);
+v_garch = [NaN; E]; % pad with a NaN to match the size of the returns
 
 % plot the variance
 figure;
 plot(Daily_Future.Date, Daily_log_returns.^2, 'LineWidth', 1.5)
 hold on
-plot(Daily_Future.Date, v, 'LineWidth', 1.5)
+plot(Daily_Future.Date, v_garch, 'LineWidth', 1.5)
 title('Simulated Variance of the Log Returns of the EUA Futures')
 legend('Realized Variance', 'GARCH(1,1) Variance')
 xlabel('Date')
 
 % use only the phase_III_dates
-v_phase_III = v(Daily_Future.Date < phase_III_dates(2));
+v_garch_phase_III = v_garch(Daily_Future.Date < phase_III_dates(2));
+
+%% Point 8.2) Plot the ACF and PACF of Delta C
+
+Delta_C = [NaN; diff(C_spread.C_Spread)];
+
+% plot_ACF_PACF(Delta_C, '\Delta C')
+
+%% Point 8.3) Error correction model
+
+Y_phase_III = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phase_III, ...
+    Extra_Variables, v_garch, phase_III_dates(2));
+
+% fit the model
+mdl = fitlm(Y_phase_III, ...
+    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + WTI + SPX + VIX + Volatility' ...
+);
+
+% print the summary
+disp(mdl)
+
+% get the AIC and BIC
+AIC = mdl.ModelCriterion.AIC;
+BIC = mdl.ModelCriterion.BIC;
+
+% display AIC and BIC
+disp(['The AIC of the model is: ', num2str(AIC)]);
+disp(['The BIC of the model is: ', num2str(BIC)]);
 
 %% EWMA model
 
@@ -300,47 +303,7 @@ disp(P_value_coeff)
 
 %% Error correction model
 
-% filter the extra varibles to use only phase_III_dates
-Extra_Variables_phase_III = Extra_Variables(Extra_Variables.Date < phase_III_dates(2), :);
 
-% build the table with the necessary variables
-Y_phase_III = table( ...
-    Delta_C_lag1_phase_III, ...
-    Delta_C_lag2_phase_III, ...
-    Delta_C_lag3_phase_III, ...
-    Delta_Z_phase_III, ...
-    Delta_r_phase_III, ...
-    ect_lag1_phase_III, ...
-    Extra_Variables_phase_III.WTI, ...
-    Extra_Variables_phase_III.SPX, ...
-    Extra_Variables_phase_III.VIX, ...
-    v_phase_III, ...
-    v_ewma_phase_III, ...
-    Delta_C_phase_III, ...
-    'VariableNames', {'Delta_C_lag1', 'Delta_C_lag2', 'Delta_C_lag3', 'Delta_Z', 'Delta_r', ...
-    'ect_lag1', 'log_WTI', 'log_SPX', 'VIX', 'GARCH', 'EWMA', 'Delta_C' } ...
-    );
-
-% remove nan values
-Y_phase_III = rmmissing(Y_phase_III);
-
-%% General Model with the GARCH variance (Phase III)
-
-% fit the model
-mdl = fitlm(Y_phase_III, ...
-    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + log_WTI + log_SPX + VIX + GARCH' ...
-);
-
-% print the summary
-disp(mdl)
-
-% get the AIC and BIC
-AIC = mdl.ModelCriterion.AIC;
-BIC = mdl.ModelCriterion.BIC;
-
-% display AIC and BIC
-disp(['The AIC of the model is: ', num2str(AIC)]);
-disp(['The BIC of the model is: ', num2str(BIC)]);
 
 %% Model 1 with the GARCH variance
 
