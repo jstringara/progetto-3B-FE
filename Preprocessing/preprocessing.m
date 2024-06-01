@@ -32,7 +32,7 @@ Daily_Future = Daily_Future(ismember(Daily_Future.Date, dates), :);
 
 % last expiry for the front is 19th december 2022
 front_expiry = datetime(2022, 12, 19);
-next_expiry = datetime(2023, 3, 18);
+next_expiry = datetime(2023, 12, 18);
 % adjust the expiry dates past the phase IV dates
 Front_December.Expiry(Front_December.Expiry == phase_IV_dates(2)) = front_expiry;
 Next_December.Expiry(Next_December.Expiry == phase_IV_dates(2)) = next_expiry;
