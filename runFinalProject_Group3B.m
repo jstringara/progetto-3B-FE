@@ -93,132 +93,9 @@ C_spread_Next_phase_III = C_spread_next(C_spread_next.Date < phase_III_dates(2),
 
 plot_C_front_next(C_spread_Front_phase_III, C_spread_Next_phase_III)
 
-%% Point 3.b) Compute a single C_spread time series with a roll-over rule
+%% Point 3.b) Compute a single C_spread time series with roll-over rule of 15th of November
 
-% ***: this part is not really pretty, could be put into a function but it does not make a lot of sense
-
-% build a single time series of the C-Spread
-C_spread = table(Daily_Future.Date, zeros(size(Daily_Future.Price)), ...
-    'VariableNames', {'Date', 'C_Spread'});
-
-% each year up to the 15th of November we use the front December
-% after the 15th of November and up to the front's expiry we use the next December
-
-years = unique(year(Daily_Future.Date));
-prev_date = datetime(years(1)-1, 11, 15);
-
-% for each year
-for i = 1:length(years)
-    value_year = years(i);
-    % find the expiry for that year as the expiry with matching year
-    expiry_front = Front_December.Expiry(year(Front_December.Date) == value_year);
-    expiry_front = expiry_front(1);
-    % compute the last front date (15th of November of the same year)
-    last_front_date = datetime(value_year, 11, 15);
-    % from the previous date to the 15th of November take the front December
-    C_spread.C_Spread(C_spread.Date >= prev_date & C_spread.Date < last_front_date) = ...
-        C_spread_front.C_Spread(C_spread.Date >= prev_date & C_spread.Date < last_front_date);
-    % from the 15th of November to the expiry take the next December
-    C_spread.C_Spread(C_spread.Date >= last_front_date & C_spread.Date < expiry_front) = ...
-        C_spread_next.C_Spread(C_spread.Date >= last_front_date & C_spread.Date < expiry_front);
-    % update the previous date
-    prev_date = expiry_front;
-end
-%% Point 9.c.i) Compute a single C_spread time series with a roll-over rule
-% each year up to the front open interest bigger than the next one
-
-% years = unique(year(Daily_Future.Date));
-% prev_date = datetime(years(1), 1, 1);
-%
-% change_dates = OpenInterest.Date(find(OpenInterest.Front<OpenInterest.Next));
-%
-% % for each year
-% for i = 1:length(years)
-%     value_year = years(i);
-%     % find the expiry for that year as the expiry with matching year
-%     expiry_front = Front_December.Expiry(year(Front_December.Date) == value_year);
-%     expiry_front = expiry_front(1);
-%     % computing last front date
-%     index_front_date = find(year(change_dates) == value_year,1);
-%     last_front_date = change_dates(index_front_date);
-%     if isempty(index_front_date)
-%         C_spread.C_Spread(C_spread.Date >= prev_date & C_spread.Date < expiry_front) = ...
-%         C_spread_front.C_Spread(C_spread.Date >= prev_date & C_spread.Date < expiry_front);
-%     else
-%         C_spread.C_Spread(C_spread.Date >= prev_date & C_spread.Date < last_front_date) = ...
-%         C_spread_front.C_Spread(C_spread.Date >= prev_date & C_spread.Date < last_front_date);
-%         % from the 15th of November to the expiry take the next December
-%         C_spread.C_Spread(C_spread.Date >= last_front_date & C_spread.Date < expiry_front) = ...
-%         C_spread_next.C_Spread(C_spread.Date >= last_front_date & C_spread.Date < expiry_front);
-%         % update the previous date
-%
-%     end
-% prev_date = expiry_front;
-%
-% end
-
-
-%% Point 9.c.ii) Compute a single C_spread time series with a roll-over rule
-%
-% % ***: this part is not really pretty, could be put into a function but it does not make a lot of sense
-%
-% % build a single time series of the C-Spread
-% C_spread = table(Daily_Future.Date, zeros(size(Daily_Future.Price)), ...
-%     'VariableNames', {'Date', 'C_Spread'});
-%
-% % each year up to the 15th of November we use the front December
-% % after the 15th of November and up to the front's expiry we use the next December
-% years = unique(year(Daily_Future.Date));
-% prev_date = Front_December.Expiry(1)-calmonths(1)-calyears(1);
-%
-% % for each year
-% for i = 1:length(years)
-%     value_year = years(i);
-%     % find the expiry for that year as the expiry with matching year
-%     expiry_front = Front_December.Expiry(year(Front_December.Date) == value_year);
-%     expiry_front = expiry_front(1);
-%     % compute the last front date (15th of November of the same year)
-%     last_front_date = expiry_front-calmonths(1);
-%     % from the previous date to the 15th of November take the front December
-%     C_spread.C_Spread(C_spread.Date >= prev_date & C_spread.Date < last_front_date) = ...
-%         C_spread_front.C_Spread(C_spread.Date >= prev_date & C_spread.Date < last_front_date);
-%     % from the 15th of November to the expiry take the next December
-%     C_spread.C_Spread(C_spread.Date >= last_front_date & C_spread.Date < expiry_front) = ...
-%         C_spread_next.C_Spread(C_spread.Date >= last_front_date & C_spread.Date < expiry_front);
-%     % update the previous date
-%     prev_date = expiry_front;
-% end
-
-%% Point 9.c.iii) Compute a single C_spread time series with a roll-over rule
-
-% % ***: this part is not really pretty, could be put into a function but it does not make a lot of sense
-%
-% % build a single time series of the C-Spread
-% C_spread = table(Daily_Future.Date, zeros(size(Daily_Future.Price)), ...
-%     'VariableNames', {'Date', 'C_Spread'});
-%
-% % each year up to the 15th of November we use the front December
-% % after the 15th of November and up to the front's expiry we use the next December
-% years = unique(year(Daily_Future.Date));
-% prev_date = Front_December.Expiry(1)-calweeks(1)-calyears(1);
-%
-% % for each year
-% for i = 1:length(years)
-%     value_year = years(i);
-%     % find the expiry for that year as the expiry with matching year
-%     expiry_front = Front_December.Expiry(year(Front_December.Date) == value_year);
-%     expiry_front = expiry_front(1);
-%     % compute the last front date (15th of November of the same year)
-%     last_front_date = expiry_front-calweeks(1);
-%     % from the previous date to the 15th of November take the front December
-%     C_spread.C_Spread(C_spread.Date >= prev_date & C_spread.Date < last_front_date) = ...
-%         C_spread_front.C_Spread(C_spread.Date >= prev_date & C_spread.Date < last_front_date);
-%     % from the 15th of November to the expiry take the next December
-%     C_spread.C_Spread(C_spread.Date >= last_front_date & C_spread.Date < expiry_front) = ...
-%         C_spread_next.C_Spread(C_spread.Date >= last_front_date & C_spread.Date < expiry_front);
-%     % update the previous date
-%     prev_date = expiry_front;
-% end
+C_spread = aggregate_C_Spread(Front_December, C_spread_front, Next_December, C_spread_next, 1, OpenInterest);
 
 %% Compute the Mean and the Standard Deviation of the C-Spread
 
@@ -336,7 +213,7 @@ B = B / B(1);
 % write and plot the cointegration vectors
 disp(B')
 
-ect = Y_mat * B;
+ect_phase_III = Y_mat * B;
 
 % test the stationarity of the error correction term
 %[h,pValue,stat,cValue,mles] = adftest(ect, 'Display', 'summary');
@@ -344,22 +221,25 @@ ect = Y_mat * B;
 %% Compute the Cointegration between the Z-Spread and the C-Spread
 
 % build the lagged difference of the C-Spread
-Delta_C = [NaN; diff(C_spread_phase_III.C_Spread)];
+Delta_C = [NaN; diff(C_spread.C_Spread)];
+Delta_C_phase_III = Delta_C(Daily_Future.Date < phase_III_dates(2));
 
 % plot_ACF_PACF(Delta_C, '\Delta C')
 
 %% Error correction model
 
-Delta_Z = [NaN; diff(Z_spread_phase_III.Z_Spread)];
-Delta_r = [NaN; diff(risk_free_rate_phase_III.Risk_Free_Rate)];
+Delta_Z = [NaN; diff(Z_spread.Z_Spread)];
+Delta_Z_phase_III = [NaN; diff(Z_spread_phase_III.Z_Spread)];
+Delta_r = [NaN; diff(risk_free_rate.Risk_Free_Rate)];
+Delta_r_phase_III = [NaN; diff(risk_free_rate_phase_III.Risk_Free_Rate)];
 
 % lagged values of Delta_C
-Delta_C_lag1 = lagmatrix(Delta_C, 1);
-Delta_C_lag2 = lagmatrix(Delta_C, 2);
-Delta_C_lag3 = lagmatrix(Delta_C, 3);
+Delta_C_lag1_phase_III = lagmatrix(Delta_C_phase_III, 1);
+Delta_C_lag2_phase_III = lagmatrix(Delta_C_phase_III, 2);
+Delta_C_lag3_phase_III = lagmatrix(Delta_C_phase_III, 3);
 
 % lagged value of ect
-ect_lag1 = lagmatrix(ect, 1);
+ect_lag1_phase_III = lagmatrix(ect_phase_III, 1);
 
 %% GARCh(1,1) model for the variance of the log return of the spot price of the EUA futures
 
@@ -427,32 +307,32 @@ disp(P_value_coeff)
 Extra_Variables_phase_III = Extra_Variables(Extra_Variables.Date < phase_III_dates(2), :);
 
 % build the table with the necessary variables
-Y = table( ...
-    Delta_C_lag1, ...
-    Delta_C_lag2, ...
-    Delta_C_lag3, ...
-    Delta_Z, ...
-    Delta_r, ...
-    ect_lag1, ...
+Y_phase_III = table( ...
+    Delta_C_lag1_phase_III, ...
+    Delta_C_lag2_phase_III, ...
+    Delta_C_lag3_phase_III, ...
+    Delta_Z_phase_III, ...
+    Delta_r_phase_III, ...
+    ect_lag1_phase_III, ...
     Extra_Variables_phase_III.WTI, ...
     Extra_Variables_phase_III.SPX, ...
     Extra_Variables_phase_III.VIX, ...
     v_phase_III, ...
     v_ewma_phase_III, ...
-    Delta_C, ...
+    Delta_C_phase_III, ...
     'VariableNames', {'Delta_C_lag1', 'Delta_C_lag2', 'Delta_C_lag3', 'Delta_Z', 'Delta_r', ...
     'ect_lag1', 'log_WTI', 'log_SPX', 'VIX', 'GARCH', 'EWMA', 'Delta_C' } ...
     );
 
 % remove nan values
-Y = rmmissing(Y);
+Y_phase_III = rmmissing(Y_phase_III);
 
 %% General Model with the GARCH variance (Phase III)
 
 % fit the model
-mdl = fitlm(Y, ...
-    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + log_WTI + log_SPX + VIX + GARCH', ...
-    'Intercept', false);
+mdl = fitlm(Y_phase_III, ...
+    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + log_WTI + log_SPX + VIX + GARCH' ...
+);
 
 % print the summary
 disp(mdl)
@@ -460,13 +340,17 @@ disp(mdl)
 % get the AIC and BIC
 AIC = mdl.ModelCriterion.AIC;
 BIC = mdl.ModelCriterion.BIC;
+
+% display AIC and BIC
+disp(['The AIC of the model is: ', num2str(AIC)]);
+disp(['The BIC of the model is: ', num2str(BIC)]);
 
 %% Model 1 with the GARCH variance
 
 % fit the model
-mdl = fitlm(Y(:,[1:3,6,12]), ...
-    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + ect_lag1', ...
-    'Intercept', false);
+mdl = fitlm(Y_phase_III, ...
+    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + ect_lag1' ...
+);
 
 % print the summary
 disp(mdl)
@@ -475,12 +359,16 @@ disp(mdl)
 AIC = mdl.ModelCriterion.AIC;
 BIC = mdl.ModelCriterion.BIC;
 
-%% Model 2 with the GARCH variance
+% display AIC and BIC
+disp(['The AIC of the model is: ', num2str(AIC)]);
+disp(['The BIC of the model is: ', num2str(BIC)]);
+
+%% Model 2
 
 % fit the model
-mdl = fitlm(Y(:,[1:6,12]), ...
-    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r +ect_lag1', ...
-    'Intercept', false);
+mdl = fitlm(Y_phase_III, ...
+    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r +ect_lag1' ...
+);
 
 % print the summary
 disp(mdl)
@@ -489,11 +377,16 @@ disp(mdl)
 AIC = mdl.ModelCriterion.AIC;
 BIC = mdl.ModelCriterion.BIC;
 
-%% Model 3 with the GARCH variance
+% display AIC and BIC
+disp(['The AIC of the model is: ', num2str(AIC)]);
+disp(['The BIC of the model is: ', num2str(BIC)]);
+
+%% Model 3
+
 % fit the model
-mdl = fitlm(Y(:,[7,12]), ...
-    'Delta_C ~ log_WTI', ...
-    'Intercept', false);
+mdl = fitlm(Y_phase_III, ...
+    'Delta_C ~ log_WTI' ...
+);
 
 % print the summary
 disp(mdl)
@@ -502,11 +395,16 @@ disp(mdl)
 AIC = mdl.ModelCriterion.AIC;
 BIC = mdl.ModelCriterion.BIC;
 
-%% Model 4 with the GARCH variance
+% display AIC and BIC
+disp(['The AIC of the model is: ', num2str(AIC)]);
+disp(['The BIC of the model is: ', num2str(BIC)]);
+
+%% Model 4
+
 % fit the model
-mdl = fitlm(Y(:,[1:7,12]), ...
-    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r +ect_lag1 +log_WTI', ...
-    'Intercept', false);
+mdl = fitlm(Y_phase_III, ...
+    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r +ect_lag1 +log_WTI' ...
+);
 
 % print the summary
 disp(mdl)
@@ -514,12 +412,17 @@ disp(mdl)
 % get the AIC and BIC
 AIC = mdl.ModelCriterion.AIC;
 BIC = mdl.ModelCriterion.BIC;
+
+% display AIC and BIC
+disp(['The AIC of the model is: ', num2str(AIC)]);
+disp(['The BIC of the model is: ', num2str(BIC)]);
 
 %% Model 5 with the GARCH variance
+
 % fit the model
-mdl = fitlm(Y(:,[7:10,12]), ...
-    'Delta_C ~ log_WTI + log_SPX + VIX + GARCH', ...
-    'Intercept', false);
+mdl = fitlm(Y_phase_III, ...
+    'Delta_C ~ log_WTI + log_SPX + VIX + GARCH' ...
+);
 
 % print the summary
 disp(mdl)
@@ -528,14 +431,15 @@ disp(mdl)
 AIC = mdl.ModelCriterion.AIC;
 BIC = mdl.ModelCriterion.BIC;
 
+% display AIC and BIC
+disp(['The AIC of the model is: ', num2str(AIC)]);
+disp(['The BIC of the model is: ', num2str(BIC)]);
 
 %% Model with the EWMA variance
 
-disp(['The AIC of the model is: ', num2str(AIC)]);
-disp(['The BIC of the model is: ', num2str(BIC)]);
-mdl = fitlm(Y, ...
-    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + log_WTI + log_SPX + VIX + EWMA', ...
-    'Intercept', false);
+mdl = fitlm(Y_phase_III, ...
+    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + log_WTI + log_SPX + VIX + EWMA' ...
+);
 
 disp(mdl)
 
@@ -545,6 +449,19 @@ BIC = mdl.ModelCriterion.BIC;
 
 disp(['The AIC of the model with EWMA is: ', num2str(AIC)]);
 disp(['The BIC of the model with EWMA is: ', num2str(BIC)]);
+
+%% Point 9.c.i) Compute a single C_spread time series with a Open Interest rule
+
+C_spread = aggregate_C_Spread(Front_December, C_spread_front, Next_December, C_spread_next, 2, OpenInterest);
+
+%% Point 9.c.ii) Compute a single C_spread time series with a roll-over rule one month before the expiry
+
+C_spread = aggregate_C_Spread(Front_December, C_spread_front, Next_December, C_spread_next, 3, OpenInterest);
+
+%% Point 9.c.iii) Compute a single C_spread time series with a roll-over rule
+
+C_spread = aggregate_C_Spread(Front_December, C_spread_front, Next_December, C_spread_next, 4, OpenInterest);
+
 
 %% Quantile regression
 
