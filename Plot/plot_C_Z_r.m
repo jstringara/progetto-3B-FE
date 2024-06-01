@@ -14,7 +14,7 @@ hold on
 % plot the Z-Spread in orange (#D95319)
 plot(Z_spread.Date, 100 * Z_spread.Z_Spread, ...
     'Color', [0.8500 0.3250 0.0980])
-plot(C_spread.Date, 100 * risk_free_rate, 'black')
+plot(C_spread.Date, 100 * risk_free_rate.Risk_Free_Rate, 'black')
 hold on
 % only keep date between the first recorded and the last of 2021
 xlim([C_spread.Date(1) - calmonths(6), C_spread.Date(end) + calmonths(6)])
