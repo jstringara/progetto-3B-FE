@@ -61,7 +61,7 @@ grouping = [
     3*ones(height(Front_December),1)
     ];
 
-% plot_Volumes_fronts_months(Volumes_fronts_months, grouping)
+plot_Volumes_fronts_months(Volumes_fronts_months, grouping)
 
 % boxplot of the December front and next
 
@@ -77,7 +77,7 @@ grouping = [
     2*ones(height(Next_2_December),1)
     ];
 
-% plot_Volumes_december(Volumes_dec, grouping)
+plot_Volumes_december(Volumes_dec, grouping)
 
 %% Point 3) compute the C-Spread for the EUA futures
 
@@ -97,43 +97,18 @@ plot_C_front_next(C_spread_Front_phase_III, C_spread_Next_phase_III)
 
 C_spread = aggregate_C_Spread(Front_December, C_spread_front, Next_December, C_spread_next, 1, OpenInterest);
 
-%% Compute the Mean and the Standard Deviation of the C-Spread
-
 C_spread_phase_III = C_spread(C_spread.Date < phase_III_dates(2), :);
-
-% compute the Mean and the Standard Deviation of the C-Spread
-mean_C_spread = mean(C_spread_phase_III.C_Spread);
-std_C_spread = std(C_spread_phase_III.C_Spread);
-
-% display the results
-disp(['The mean of the C-Spread is: ', num2str(mean_C_spread * 100), '%']);
-disp(['The standard deviation of the C-Spread is: ', num2str(std_C_spread * 100), '%']);
 
 %% Plot the C-Spread
 
 % plot_C(C_spread)
 
-%% Compute the Z-Spread for each bond
+%% Point 4) Compute the Z-Spread time series
 
 Z_spread = compute_ZSpread(Bonds, dates, zrates);
-
-%% Plot the Z-Spread for the phase_III_dates
-
 Z_spread_phase_III = Z_spread(Z_spread.Date < phase_III_dates(2), :);
-risk_free_rate_phase_III = risk_free_rate(dates(:,1) < phase_III_dates(2), :);
 
-plot_C_Z_r(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III)
-
-%% Mean and Variance of the Z-Spread (only on dates before 2021)
-
-mean_Z_spread = mean(Z_spread_phase_III.Z_Spread);
-std_Z_spread = std(Z_spread_phase_III.Z_Spread);
-
-% display the results
-disp(['The mean of the Z-Spread is: ', num2str(mean_Z_spread * 100), '%']);
-disp(['The standard deviation of the Z-Spread is: ', num2str(std_Z_spread * 100), '%']);
-
-%% Meand and Variance for the interest rates (only on dates before 2021)
+%% Point 5) The Risk Free Rate is the 3M interest rate
 
 % take the 3M interest rate
 risk_free_rate = zrates(:,7);
@@ -142,23 +117,45 @@ risk_free_rate = table(Daily_Future.Date, risk_free_rate, 'VariableNames', {'Dat
 % filter the dates
 risk_free_rate_phase_III = risk_free_rate(risk_free_rate.Date < phase_III_dates(2), :);
 
+%% Point 6.1) Plot the C-Spread, Z-Spread and the Risk-Free Rate
+
+plot_C_Z_r(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III)
+
+%% Point 6.2) Plot ACF and PACF of the Z-Spread and C-Spread
+
+% plot the ACF and PACF
+plot_ACF_PACF(Z_spread_phase_III, 'Z-Spread')
+plot_ACF_PACF(C_spread_phase_III, 'C-Spread')
+plot_ACF_PACF(risk_free_rate_phase_III, 'Risk-Free Rate')
+
+%% Point 6.3) Mean and Variance of all three series for phase III
+
+% C-Spread
+
+% compute the Mean and the Standard Deviation of the C-Spread
+mean_C_spread = mean(C_spread_phase_III.C_Spread);
+std_C_spread = std(C_spread_phase_III.C_Spread);
+% display the results
+disp(['The mean of the C-Spread is: ', num2str(mean_C_spread * 100), '%']);
+disp(['The standard deviation of the C-Spread is: ', num2str(std_C_spread * 100), '%']);
+
+% Z-Spread
+
+mean_Z_spread = mean(Z_spread_phase_III.Z_Spread);
+std_Z_spread = std(Z_spread_phase_III.Z_Spread);
+
+disp(['The mean of the Z-Spread is: ', num2str(mean_Z_spread * 100), '%']);
+disp(['The standard deviation of the Z-Spread is: ', num2str(std_Z_spread * 100), '%']);
+
+% Risk-Free Rate
+
 mean_zrates = mean(risk_free_rate_phase_III.Risk_Free_Rate);
 std_zrates = std(risk_free_rate_phase_III.Risk_Free_Rate);
-
-%mean_zrates = mean(risk_free_rate{dates(:,1) < datetime(2022, 10, 29),2});
-%std_zrates = std(risk_free_rate{dates(:,1) < datetime(2022, 10, 29),2});
 
 disp(['The mean of the zero rates is: ', num2str(mean_zrates * 100), '%']);
 disp(['The standard deviation of the zero rates is: ', num2str(std_zrates * 100), '%']);
 
-%% Plot ACF and PACF of the Z-Spread and C-Spread
-
-% plot the ACF and PACF
-% plot_ACF_PACF(Z_spread_phase_III, 'Z-Spread')
-% plot_ACF_PACF(C_spread_phase_III, 'C-Spread')
-% plot_ACF_PACF(risk_free_rate_phase_III, 'Risk-Free Rate')
-
-%% Check that they are all integrated of order 1
+%% Point 6.4) Check that they are all integrated of order 1
 
 % perform the ADF test
 z_spread_res = adftest(Z_spread_phase_III.Z_Spread);
@@ -188,9 +185,9 @@ else
     disp('The Risk-Free Rate is not integrated of order 1')
 end
 
-%% Johansen Test to find cointegration between these three
+%% Point 7) Johansen Test to find cointegration between these three
 
-Y = table( ...
+Y_joc = table( ...
     C_spread_phase_III.Date, ...
     C_spread_phase_III.C_Spread, ...
     Z_spread_phase_III.Z_Spread, ...
@@ -198,10 +195,10 @@ Y = table( ...
     'VariableNames', {'Date', 'C_Spread', 'Z_Spread', 'Risk_Free_Rate'} ...
 );
 
-Y_mat = [Y.C_Spread, Y.Z_Spread, Y.Risk_Free_Rate];
+Y_joc_mat = [Y_joc.C_Spread, Y_joc.Z_Spread, Y_joc.Risk_Free_Rate];
 
 % Johansen test
-[h,pValue,stat,cValue,mles] = jcitest(Y_mat, ...
+[h,pValue,stat,cValue,mles] = jcitest(Y_joc_mat, ...
     Test=["trace" "maxeig"], Display="summary", Model="H2");
 
 params = mles.r1.paramVals;
@@ -211,9 +208,9 @@ B = params.B;
 B = B / B(1);
 
 % write and plot the cointegration vectors
-disp(B')
+disp(['{' num2str(B(1)) ', ' num2str(B(2)) ', ' num2str(B(3)) '}'])
 
-ect_phase_III = Y_mat * B;
+ect_phase_III = Y_joc_mat * B;
 
 % test the stationarity of the error correction term
 %[h,pValue,stat,cValue,mles] = adftest(ect, 'Display', 'summary');
