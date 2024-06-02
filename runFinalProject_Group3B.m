@@ -239,16 +239,16 @@ Y_phase_III = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phas
     Extra_Variables, v_garch, phase_III_dates(2));
 
 % fit the model
-mdl = fitlm(Y_phase_III, ...
+mdl_VI = fitlm(Y_phase_III, ...
     'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + WTI + SPX + VIX + Volatility' ...
 );
 
 % print the summary
-disp(mdl)
+disp(mdl_VI)
 
 % get the AIC and BIC
-AIC = mdl.ModelCriterion.AIC;
-BIC = mdl.ModelCriterion.BIC;
+AIC = mdl_VI.ModelCriterion.AIC;
+BIC = mdl_VI.ModelCriterion.BIC;
 
 % display AIC and BIC
 disp(['The AIC of the model is: ', num2str(AIC)]);
@@ -259,92 +259,50 @@ disp(['The BIC of the model is: ', num2str(BIC)]);
 %% Model I
 
 % fit the model
-mdl = fitlm(Y_phase_III, ...
-    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + ect_lag1' ...
-);
-
-% print the summary
-disp(mdl)
-
-% get the AIC and BIC
-AIC = mdl.ModelCriterion.AIC;
-BIC = mdl.ModelCriterion.BIC;
-
-% display AIC and BIC
-disp(['The AIC of the model is: ', num2str(AIC)]);
-disp(['The BIC of the model is: ', num2str(BIC)]);
+mdl_I = fitlm(Y_phase_III, 'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + ect_lag1');
 
 %% Model II
 
 % fit the model
-mdl = fitlm(Y_phase_III, ...
-    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r +ect_lag1' ...
-);
-
-% print the summary
-disp(mdl)
-
-% get the AIC and BIC
-AIC = mdl.ModelCriterion.AIC;
-BIC = mdl.ModelCriterion.BIC;
-
-% display AIC and BIC
-disp(['The AIC of the model is: ', num2str(AIC)]);
-disp(['The BIC of the model is: ', num2str(BIC)]);
+mdl_II = fitlm(Y_phase_III, ...
+    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r +ect_lag1');
 
 %% Model III
 
 % fit the model
-mdl = fitlm(Y_phase_III, ...
-    'Delta_C ~ WTI' ...
-);
-
-% print the summary
-disp(mdl)
-
-% get the AIC and BIC
-AIC = mdl.ModelCriterion.AIC;
-BIC = mdl.ModelCriterion.BIC;
-
-% display AIC and BIC
-disp(['The AIC of the model is: ', num2str(AIC)]);
-disp(['The BIC of the model is: ', num2str(BIC)]);
+mdl_III = fitlm(Y_phase_III, 'Delta_C ~ WTI');
 
 %% Model IV
 
 % fit the model
-mdl = fitlm(Y_phase_III, ...
-    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r +ect_lag1 + WTI' ...
-);
-
-% print the summary
-disp(mdl)
-
-% get the AIC and BIC
-AIC = mdl.ModelCriterion.AIC;
-BIC = mdl.ModelCriterion.BIC;
-
-% display AIC and BIC
-disp(['The AIC of the model is: ', num2str(AIC)]);
-disp(['The BIC of the model is: ', num2str(BIC)]);
+mdl_IV = fitlm(Y_phase_III, ...
+    'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r +ect_lag1 + WTI');
 
 %% Model V
 
 % fit the model
-mdl = fitlm(Y_phase_III, ...
-    'Delta_C ~ WTI + SPX + VIX + Volatility' ...
-);
+mdl_V = fitlm(Y_phase_III, 'Delta_C ~ WTI + SPX + VIX + Volatility');
 
-% print the summary
-disp(mdl)
+%% Results table of all the 6 models
 
-% get the AIC and BIC
-AIC = mdl.ModelCriterion.AIC;
-BIC = mdl.ModelCriterion.BIC;
+% create the table
+Models = ["Model I"; "Model II"; "Model III"; "Model IV"; "Model V"; "Model VI"];
+% a row for each regression coefficient of model VI, Obs, BIC and AIC
+rows = ["Delta_C_lag1", "Delta_C_lag2", "Delta_C_lag3", "Delta_Z", "Delta_r", "ect_lag1", "WTI", ...
+    "SPX", "VIX", "Volatility", "(Intercept)", "Obs", "BIC", "AIC"];
+% create the table (it contains only strings)
+T = table('Size', [length(rows), length(Models)], 'VariableNames', Models, 'RowNames', rows, ...
+    'VariableTypes', repmat({'string'}, 1, length(Models)));
 
-% display AIC and BIC
-disp(['The AIC of the model is: ', num2str(AIC)]);
-disp(['The BIC of the model is: ', num2str(BIC)]);
+% fill the table
+T = composeTable(T, 'Model I', mdl_I, rows);
+T = composeTable(T, 'Model II', mdl_II, rows);
+T = composeTable(T, 'Model III', mdl_III, rows);
+T = composeTable(T, 'Model IV', mdl_IV, rows);
+T = composeTable(T, 'Model V', mdl_V, rows);
+T = composeTable(T, 'Model VI', mdl_VI, rows);
+
+disp(T)
 
 %% EWMA model
 
