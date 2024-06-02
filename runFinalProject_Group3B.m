@@ -83,16 +83,17 @@ grouping = [
 %% Point 3) compute the C-Spread for the EUA futures
 
 risk_free_rate = RiskFreeRate(dates, zrates, Front_December.Expiry);
+risk_free_rate_next = RiskFreeRate(dates, zrates, Next_December.Expiry);
 
 C_spread_front = compute_C_Spread(Front_December, Daily_Future, risk_free_rate);
-C_spread_next = compute_C_Spread(Next_December, Daily_Future, risk_free_rate);
+C_spread_next = compute_C_Spread(Next_December, Daily_Future, risk_free_rate_next);
 
 %% Plot the two C-Spreads for phase_III_dates
 
 C_spread_Front_phase_III = C_spread_front(C_spread_front.Date < phase_III_dates(2), :);
 C_spread_Next_phase_III = C_spread_next(C_spread_next.Date < phase_III_dates(2), :);
 
-% plot_C_front_next(C_spread_Front_phase_III, C_spread_Next_phase_III)
+plot_C_front_next(C_spread_Front_phase_III, C_spread_Next_phase_III)
 
 %% Point 3.b) Compute a single C_spread time series with roll-over rule of 15th of November
 
@@ -120,7 +121,7 @@ risk_free_rate_phase_III = risk_free_rate(risk_free_rate.Date < phase_III_dates(
 
 %% Point 6.1) Plot the C-Spread, Z-Spread and the Risk-Free Rate
 
-% plot_C_Z_r(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III)
+plot_C_Z_r(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III)
 
 %% Point 6.2) Plot ACF and PACF of the Z-Spread and C-Spread
 
