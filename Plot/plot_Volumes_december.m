@@ -1,4 +1,4 @@
-function plot_Volumes_december(Volumes_dec, grouping)
+function plot_Volumes_december(Volumes_dec, grouping, save_figure)
 % plot_Volumes_december - plot the volume of the EUA futures for the
 % different December months (front, next, second next)
 %
@@ -14,5 +14,10 @@ boxplot(log10(Volumes_dec+1), ...
 % set the title and grid
 title('Volume of EUA Futures for December')
 grid on
+
+% if save_figure is true, save the figure
+if save_figure
+    saveas(gcf, 'Results/Volume_of_EUA_Futures_December.png')
+end
 
 end

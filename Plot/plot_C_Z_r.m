@@ -1,11 +1,11 @@
-function plot_C_Z_r(C_spread, Z_spread, risk_free_rate)
+function plot_C_Z_r(C_spread, Z_spread, risk_free_rate, save_figure)
 % plot_C_Z_r plots the C-Spread and the zero rates
 %
 % INPUTS
-% - C_spread: the C-Spread [table]
-% - Z_spread: the Z-Spread [table]
-% - risk_free_rate: the risk free rate
-%
+%   C_spread: the C-Spread [table]
+%   Z_spread: the Z-Spread [table]
+%   risk_free_rate: the risk free rate
+%   save_figure: a boolean to save the figure [boolean]
 
 % plot the C-Spread, along with the zero rates
 figure;
@@ -25,5 +25,9 @@ title('C-Spread')
 grid on
 
 legend('C-Spread', 'Z-Spread', 'Risk-Free Rate')
+
+if save_figure
+    saveas(gcf, 'Results/C_Z_r.png')
+end
 
 end
