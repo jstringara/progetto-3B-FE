@@ -28,9 +28,6 @@ addpath('Plot');
 addpath('Regression');
 addpath('QR');
 
-% set the python environment
-%pe = pyenv('Version', 'venv/Scripts/python.exe', 'ExecutionMode', 'OutOfProcess');
-
 %% Preprocces and data loading
 
 % ***: Preprocessing is slow as hell, it takes 11 seconds to load the data
@@ -62,7 +59,7 @@ grouping = [
     3*ones(height(Front_December),1)
     ];
 
-% plot_Volumes_fronts_months(Volumes_fronts_months, grouping)
+% plot_Volumes_fronts_months(Volumes_fronts_months, grouping, true)
 
 % boxplot of the December front and next
 
@@ -78,7 +75,7 @@ grouping = [
     2*ones(height(Next_2_December),1)
     ];
 
-% plot_Volumes_december(Volumes_dec, grouping)
+% plot_Volumes_december(Volumes_dec, grouping, true)
 
 %% Point 3) compute the C-Spread for the EUA futures
 
@@ -93,7 +90,7 @@ C_spread_next = compute_C_Spread(Next_December, Daily_Future, risk_free_rate_nex
 C_spread_Front_phase_III = C_spread_front(C_spread_front.Date < phase_III_dates(2), :);
 C_spread_Next_phase_III = C_spread_next(C_spread_next.Date < phase_III_dates(2), :);
 
-plot_C_front_next(C_spread_Front_phase_III, C_spread_Next_phase_III)
+% plot_C_front_next(C_spread_Front_phase_III, C_spread_Next_phase_III, save_figure)
 
 %% Point 3.b) Compute a single C_spread time series with roll-over rule of 15th of November
 
@@ -103,7 +100,7 @@ C_spread_phase_III = C_spread(C_spread.Date < phase_III_dates(2), :);
 
 %% Plot the C-Spread
 
-% plot_C(C_spread)
+% plot_C(C_spread, true)
 
 %% Point 4) Compute the Z-Spread time series
 
@@ -121,75 +118,26 @@ risk_free_rate_phase_III = risk_free_rate(risk_free_rate.Date < phase_III_dates(
 
 %% Point 6.1) Plot the C-Spread, Z-Spread and the Risk-Free Rate
 
-plot_C_Z_r(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III)
+plot_C_Z_r(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III, true)
 
 %% Point 6.2) Plot ACF and PACF of the Z-Spread and C-Spread
 
 % plot the ACF and PACF
-% plot_ACF_PACF(Z_spread_phase_III, 'Z-Spread')
-% plot_ACF_PACF(C_spread_phase_III, 'C-Spread')
-% plot_ACF_PACF(risk_free_rate_phase_III, 'Risk-Free Rate')
+% plot_ACF_PACF(Z_spread_phase_III, 'Z-Spread', true)
+% plot_ACF_PACF(C_spread_phase_III, 'C-Spread', true)
+% plot_ACF_PACF(risk_free_rate_phase_III, 'Risk-Free Rate', true)
 
 %% Point 6.3) Mean and Variance of all three series for phase III
 
-% C-Spread
-
-% compute the Mean and the Standard Deviation of the C-Spread
-mean_C_spread = mean(C_spread_phase_III.C_Spread);
-std_C_spread = std(C_spread_phase_III.C_Spread);
-% display the results
-disp(['The mean of the C-Spread is: ', num2str(mean_C_spread * 100), '%']);
-disp(['The standard deviation of the C-Spread is: ', num2str(std_C_spread * 100), '%']);
-
-% Z-Spread
-
-mean_Z_spread = mean(Z_spread_phase_III.Z_Spread);
-std_Z_spread = std(Z_spread_phase_III.Z_Spread);
-
-disp(['The mean of the Z-Spread is: ', num2str(mean_Z_spread * 100), '%']);
-disp(['The standard deviation of the Z-Spread is: ', num2str(std_Z_spread * 100), '%']);
-
-% Risk-Free Rate
-
-mean_zrates = mean(risk_free_rate_phase_III.Risk_Free_Rate);
-std_zrates = std(risk_free_rate_phase_III.Risk_Free_Rate);
-
-disp(['The mean of the zero rates is: ', num2str(mean_zrates * 100), '%']);
-disp(['The standard deviation of the zero rates is: ', num2str(std_zrates * 100), '%']);
+summaryTable_C_Z_r = summaryTable(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III, true);
 
 %% Point 6.4) Check that they are all integrated of order 1
 
-% perform the ADF test
-z_spread_res = adftest(Z_spread_phase_III.Z_Spread);
-z_spread_res_diff = adftest(diff(Z_spread_phase_III.Z_Spread));
-
-if z_spread_res == 0 && z_spread_res_diff == 1
-    disp('The Z-Spread is integrated of order 1')
-else
-    disp('The Z-Spread is not integrated of order 1')
-end
-
-c_spread_res = adftest(C_spread_phase_III.C_Spread);
-c_spread_res_diff = adftest(diff(C_spread_phase_III.C_Spread));
-
-if c_spread_res == 0 && c_spread_res_diff == 1
-    disp('The C-Spread is integrated of order 1')
-else
-    disp('The C-Spread is not integrated of order 1')
-end
-
-risk_free_rate_res = adftest(risk_free_rate_phase_III.Risk_Free_Rate);
-risk_free_rate_res_diff = adftest(diff(risk_free_rate_phase_III.Risk_Free_Rate));
-
-if risk_free_rate_res == 0 && risk_free_rate_res_diff == 1
-    disp('The Risk-Free Rate is integrated of order 1')
-else
-    disp('The Risk-Free Rate is not integrated of order 1')
-end
+summaryTable_ADF = summaryADF(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III, true);
 
 %% Point 7) Johansen Test to find cointegration between these three
 
-ect_phase_III = computeECT(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III);
+ect_phase_III = computeECT(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III, true);
 
 % test the stationarity of the error correction term
 %[h,pValue,stat,cValue,mles] = adftest(ect, 'Display', 'summary');
@@ -303,6 +251,9 @@ T = composeTable(T, 'Model V', mdl_V, rows);
 T = composeTable(T, 'Model VI', mdl_VI, rows);
 
 disp(T)
+
+% save to a csv file
+writetable(T, 'Results/RegressionResults.csv', 'WriteRowNames', true)
 
 %% EWMA model
 
