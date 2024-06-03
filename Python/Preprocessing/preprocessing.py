@@ -18,6 +18,7 @@ this.PHASE_IV_END = datetime.datetime(2022, 10, 28)
 # create a module level variable for the directories
 this.data_dir = '../Data/'
 this.preprocessed_dir = 'Preprocessed/'
+this.futures_dir = 'Futures/'
 
 # check that the directories exist
 if not os.path.exists(this.data_dir):
@@ -63,8 +64,7 @@ def preprocess_Volumes_front_Month(month:str, first_date:datetime.datetime = thi
     Volumes = pd.DataFrame()
 
     # iterate over the years in the period
-    years = range(first_date.year, last_date.year + 2)
-    print(years)
+    years = range(first_date.year, last_date.year + 1)
 
     for year in years:
 
@@ -73,7 +73,6 @@ def preprocess_Volumes_front_Month(month:str, first_date:datetime.datetime = thi
 
         # find the last quoted date as the last date where there is a value in the column
         next_date = extra_futures.loc[extra_futures[col_name].notnull(), 'Date'].max()
-        print(next_date)
         # select the needed data
         selected_data = extra_futures.loc[extra_futures['Date'] > prev_date].loc[
             extra_futures['Date'] <= next_date, ['Date', col_name]]
@@ -91,24 +90,29 @@ def preprocess_Volumes_front_Month(month:str, first_date:datetime.datetime = thi
 
     return Volumes
 
-def preprocess_December(years_offset:int = 0, save:bool = True)->pd.DataFrame:
+def preprocess_December(years_offset:int = 0, first_date:datetime.datetime = this.PHASE_III_START,
+    last_date:datetime.datetime = this.PHASE_IV_END, save:bool = True)->pd.DataFrame:
     """
     Function to preprocess the data of the volumes of the futures contracts in December.
     Input:
     - years_offset: integer with the number of years to go back from the current year.
+    - first_date: datetime object with the first date to consider. Default is the start of Phase III.
+    - last_date: datetime object with the last date to consider. Default is the end of Phase IV.
     - save: boolean indicating whether to save the output to a csv file or not.
     Output:
     - DataFrame with the columns 'Date' and 'Volume'.
     """
 
     # directory of the data
-    data_dir = 'Data/'
-    futures_dir = 'Futures/'
-    output_dir = 'Preprocessed/'
+    data_dir = this.data_dir
+    futures_dir = this.futures_dir
+    output_dir = this.preprocessed_dir
 
     # initialize the DataFrame
     front_Dec = pd.DataFrame()
-    prev_date = datetime.datetime(2013, 1, 2) # only dates after this date will be considered
+    prev_date = first_date
+
+    years = range(first_date.year, last_date.year + 1)
 
     # for year in range(2013, 2022): # original range
     for year in range(2013, 2023):
@@ -263,16 +267,15 @@ def preprocess_bonds(front_dates:pd.Series, save:bool = True)->dict[str: Bond]:
 
     return bonds_list
 
-if __name__ == '__main__':
-    # preprocess the volumes of the futures contracts
-    Volumes_March = preprocess_Volumes_front_Month('March')
-    Volumes_June = preprocess_Volumes_front_Month('June')
-    Volumes_Sep = preprocess_Volumes_front_Month('September')
-    # preprocess the volumes of the futures contracts in December (front, next and second next)
-    # front_december = preprocess_December()
-    # preprocess_December(years_offset=1)
-    # preprocess_December(years_offset=2)
-    # # preprocess the daily price of the futures contracts
-    # preprocess_daily_price(front_december['Date'])
-    # # preprocess the bonds
-    # preprocess_bonds(front_december['Date'])
+# preprocess the volumes of the futures contracts
+Volumes_March = preprocess_Volumes_front_Month('March')
+Volumes_June = preprocess_Volumes_front_Month('June')
+Volumes_Sep = preprocess_Volumes_front_Month('September')
+# preprocess the volumes of the futures contracts in December (front, next and second next)
+front_december = preprocess_December()
+# preprocess_December(years_offset=1)
+# preprocess_December(years_offset=2)
+# # preprocess the daily price of the futures contracts
+# preprocess_daily_price(front_december['Date'])
+# # preprocess the bonds
+# preprocess_bonds(front_december['Date'])
