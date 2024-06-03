@@ -321,6 +321,43 @@ def preprocess_extra_variables(dates:pd.Series)->pd.DataFrame:
 
     return extra_variables
 
+# preprocess the OIS rates
+def preprocess_OIS_rates(first_date:datetime.datetime = this.PHASE_III_START,
+    last_date:datetime.datetime = this.PHASE_IV_END)->pd.DataFrame:
+    """
+    Preprocess the data of the OIS rates.
+    Input:
+    - first_date: datetime object with the first date to consider. Default is the start of Phase III.
+    - last_date: datetime object with the last date to consider. Default is the end of Phase IV.
+    Output:
+    - DataFrame with the columns 'Date' and 'Rate'.
+    """
+
+    # directory of the data
+    data_dir = this.data_dir
+
+    # load the data for the OIS rates
+    OIS_rates = pd.read_csv(os.path.join(data_dir, 'OIS_Data.csv'),
+        parse_dates=['Date'])
+
+    # fill the NaN values with the previous value
+    OIS_rates = OIS_rates.ffill()
+
+    # remove duplicates
+    OIS_rates = OIS_rates.drop_duplicates()
+
+    # make all columns besides the date in percentage
+    OIS_rates.iloc[:, 1:] = OIS_rates.iloc[:, 1:] / 100
+    
+    # filter the data to only keep the dates in the front
+    OIS_rates = OIS_rates.loc[OIS_rates['Date'] >= first_date].loc[
+        OIS_rates['Date'] < last_date]
+
+    return OIS_rates
+
+# preprocess the OIS rates
+OIS_Data = preprocess_OIS_rates()
+
 # preprocess the volumes of the futures contracts
 Volumes_March = preprocess_Volumes_front_Month('March')
 Volumes_June = preprocess_Volumes_front_Month('June')
@@ -375,6 +412,7 @@ Extra_Variables = preprocess_extra_variables(common_dates)
 
 if __name__ == '__main__':
     # save the data
+    OIS_Data.to_csv(os.path.join(this.preprocessed_dir, 'OIS_Data.csv'), index=False)
     Volumes_March.to_csv(os.path.join(this.preprocessed_dir, 'Volumes_March.csv'), index=False)
     Volumes_June.to_csv(os.path.join(this.preprocessed_dir, 'Volumes_June.csv'), index=False)
     Volumes_Sep.to_csv(os.path.join(this.preprocessed_dir, 'Volumes_Sep.csv'), index=False)
