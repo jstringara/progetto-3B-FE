@@ -173,10 +173,14 @@ def preprocess_daily_price(first_date:datetime.datetime = this.PHASE_III_START,
 
     return daily_price
 
-# read the data of the bonds and pass them to matlab
+# read the data of the bonds
 def preprocess_bonds(dates:pd.Series)->dict[str: Bond]:
     """
     Preprocess the data of the bonds and pass them to matlab.
+    Input:
+    - dates: pd.Series with the dates to consider.
+    Output:
+    - dict with the bonds.
     """
 
     # directory of the data
@@ -225,6 +229,68 @@ def preprocess_bonds(dates:pd.Series)->dict[str: Bond]:
 
     return bonds_list
 
+# read the data for the open interest
+def preprocess_open_interest(Front:pd.DataFrame, first_date:datetime.datetime = this.PHASE_III_START,
+    last_date:datetime.datetime = this.PHASE_IV_END)->pd.DataFrame:
+    """
+    Preprocess the data of the open interest of the futures contracts.
+    Input:
+    - Front: DataFrame with the front futures contracts.
+    - first_date: datetime object with the first date to consider. Default is the start of Phase III.
+    - last_date: datetime object with the last date to consider. Default is the end of Phase IV.
+    Output:
+    - DataFrame with the columns 'Date' and 'Open Interest'.
+    """
+
+    # directory of the data
+    data_dir = this.data_dir
+
+    # load the data for the open interest from the xlsx file
+    open_interest = pd.read_excel(os.path.join(data_dir, 'OpenInterest.xlsx'),
+        parse_dates=['Date'])
+
+    # filter the data to only keep the dates in the front
+    open_interest = open_interest.loc[open_interest['Date'].isin(Front['Date'])]
+
+    # loop over the years
+    years = range(first_date.year, last_date.year + 1)
+    prev_date = first_date
+    columns = open_interest.columns
+
+    # modify front to adjust 2014 expiry date bu
+    front = Front.copy()
+    front.loc[
+        front['Expiry'] == datetime.datetime(2014, 12, 15), 'Expiry'
+    ] = datetime.datetime(2014, 12, 12)
+
+    # output DataFrame
+    df = pd.DataFrame()
+
+    for year in years:
+
+        # find the corresponding column
+        col_front = list(filter(lambda x: str(year) in x, columns))[0]
+        col_next = list(filter(lambda x: str(year + 1) in x, columns))[0]
+
+        # corresponding expiry date of the Front
+        expiry_date = front.loc[front['Date'].dt.year == year, 'Expiry'].values[0]
+
+        # find the selected data
+        selected_data = open_interest.loc[(open_interest['Date'] > prev_date) &
+            (open_interest['Date'] <= expiry_date), ['Date', col_front, col_next]]
+        selected_data.columns = ['Date', 'Front', 'Next']
+
+        # fill the NaN values with 0
+        selected_data['Front'] = selected_data['Front'].fillna(0)
+
+        # add the selected data to the DataFrame
+        df = pd.concat([df, selected_data])
+
+        # update the previous date
+        prev_date = expiry_date
+
+    return df
+
 # preprocess the volumes of the futures contracts
 Volumes_March = preprocess_Volumes_front_Month('March')
 Volumes_June = preprocess_Volumes_front_Month('June')
@@ -271,6 +337,9 @@ Next_2.loc[Next_2['Date'] >= penultimate_expiry, 'Expiry'] = next_2_expiry
 # preprocess the bonds
 Bonds = preprocess_bonds(common_dates)
 
+# preprocess the open interest
+Open_Interest = preprocess_open_interest(Front)
+
 if __name__ == '__main__':
     # save the data
     Volumes_March.to_csv(os.path.join(this.preprocessed_dir, 'Volumes_March.csv'), index=False)
@@ -280,6 +349,8 @@ if __name__ == '__main__':
     Next.to_csv(os.path.join(this.preprocessed_dir, 'Next.csv'), index=False)
     Next_2.to_csv(os.path.join(this.preprocessed_dir, 'Next_2.csv'), index=False)
     Daily_Price.to_csv(os.path.join(this.preprocessed_dir, 'Daily_Price.csv'), index=False)
+    Open_Interest.to_csv(os.path.join(this.preprocessed_dir, 'Open_Interest.csv'), index=False)
+    
 
 # if this is not the main file, delete unnecessary variables
 if __name__ != '__main__':
