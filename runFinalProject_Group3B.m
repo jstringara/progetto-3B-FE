@@ -353,70 +353,14 @@ disp(['The BIC of the model for phase IV is: ', num2str(BIC)]);
 
 %% Point 10) Quantile regression
 
-%% Point 10.1) Model IV
+%% Point 10.1) Model VI
 
 % construct the table for the quantile regression
 Y_qr = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phase_III, ...
     Extra_Variables, v_garch, phase_III_dates(2));
 
-% create the matrices for the quantile regression
-y = Y_qr.Delta_C;
-
-x = [
-    Y_qr.Delta_C_lag1, Y_qr.Delta_C_lag2, Y_qr.Delta_C_lag3, ...
-    Y_qr.Delta_Z, Y_qr.Delta_r, Y_qr.ect_lag1, ...
-    Y_qr.WTI, Y_qr.SPX, Y_qr.VIX, Y_qr.Volatility
-];
-
-% estimate matrix to store the estimates
-estimates = zeros(width(x) + 1, 8);
-pvalues = zeros(width(x) + 1, 8);
-
-for i = 1:4
-
-    figure;
-
-    % Plot the real y in black
-    l = length(y);
-    plot(1:l, y, 'DisplayName', 'y', 'Color', 'k')
-    hold on
-    
-     % First bound (tau = 0.1 * i)
-    tau_lb = 0.1 * i;
-    [estimate_lb, pvalue_lb, j_lb] = qr_standard(x, y, tau_lb, 'test', 'kernel', 'maxit', 5000, 'tol', 1e-10);
-    y_quantile_lb = estimate_lb(1) + x * estimate_lb(2:end);
-
-    % save the estimate and pvalue in the appropriate column of the matrix
-    estimates(:, i) = estimate_lb;
-    pvalues(:, i) = pvalue_lb;
-    
-    % % Assign a specific color
-    % if i == 1
-    %     plot_color = [0, 0.4470, 0.7410]; % Change the color with respect to the map
-    % else
-    %     plot_color = colors(i, :);
-    % end
-    
-    plot(1:l, y_quantile_lb, 'DisplayName', ['y\_quantile for tau = ', num2str(tau_lb)])
-    
-    % Opposite line (tau = 0.1 * (10 - i))
-    tau_ub = 0.1 * (10 - i);
-    [estimate_ub, pvalue_ub, j_ub] = qr_standard(x, y, tau_ub, 'test', 'kernel', 'maxit', 5000, 'tol', 1e-10);
-    y_quantile_ub = estimate_ub(1) + x * estimate_ub(2:end);
-
-    % save the estimate and pvalue in the appropriate column of the matrix
-    estimates(:, 9 - i) = estimate_ub;
-    pvalues(:, 9 - i) = pvalue_ub;
-    
-    % Use the same color for the opposite value
-    plot(1:l, y_quantile_ub, 'DisplayName', ['y\_quantile for tau = ', num2str(tau_ub)])
-    
-    title(['Plot for tau = ', num2str(tau_lb), ' and tau = ', num2str(tau_ub)])
-
-    legend('Location', 'best')
-
-end
-
+% estimate the quantile regression
+estimateQR(Y_qr, true);
 
 %% Compute the elapsed time
 
