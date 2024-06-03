@@ -19,7 +19,7 @@ for i = 1:length(rows)
         end
         T{i, model_name} = s;
     else
-        T{i, model_name} = " ";
+        T{i, model_name} = "";
     end
 end
 

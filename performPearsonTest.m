@@ -39,7 +39,7 @@ disp(T)
 
 % save the table in a .csv file
 if save_table
-    writetable(T, 'PearsonTest.csv', 'WriteRowNames', true);
+    writetable(T, 'Results/PearsonTest.csv', 'WriteRowNames', true);
 end
 
 end
