@@ -9,9 +9,6 @@ from bond import Bond
 # this is a pointer to the module object instance itself.
 this = sys.modules[__name__]
 
-# save the data for checking
-this.save_data = __name__ == '__main__'
-
 # create module level variables for the dates for Phase III and Phase IV
 this.PHASE_III_START = datetime.datetime(2013, 1, 1)
 this.PHASE_III_END = datetime.datetime(2021, 1, 1)
@@ -22,6 +19,7 @@ this.PHASE_IV_END = datetime.datetime(2022, 10, 28)
 this.data_dir = '../Data/'
 this.preprocessed_dir = 'Preprocessed/'
 this.futures_dir = 'Futures/'
+this.bonds_dir = 'Bonds/'
 
 # check that the directories exist
 if not os.path.exists(this.data_dir):
@@ -176,15 +174,14 @@ def preprocess_daily_price(first_date:datetime.datetime = this.PHASE_III_START,
     return daily_price
 
 # read the data of the bonds and pass them to matlab
-def preprocess_bonds(front_dates:pd.Series, save:bool = True)->dict[str: Bond]:
+def preprocess_bonds(dates:pd.Series)->dict[str: Bond]:
     """
     Preprocess the data of the bonds and pass them to matlab.
     """
 
     # directory of the data
-    data_dir = 'Data/'
-    bonds_dir = 'Bonds/'
-    output_dir = 'Preprocessed/'
+    data_dir = this.data_dir
+    bonds_dir = this.bonds_dir
 
     # read the bonds from the list of valid bonds
     bonds = pd.read_csv(os.path.join(data_dir, bonds_dir, 'List_Valid_Bonds.csv'),
@@ -192,8 +189,8 @@ def preprocess_bonds(front_dates:pd.Series, save:bool = True)->dict[str: Bond]:
         usecols= ['Instrument', 'Coupon Rate', 'Maturity Date', 'Original Amount Issued',
             'Coupon Frequency', 'Issuer Ticker', 'Parent Ticker'])
     # filter for only the bonds listed in the table
-    issuers_to_keep = ['MT', 'ENEI', 'ENGIE', 'LAFARGE', 'HEIG', 'EDF', 'ENI', 'TTEF', 'MAERS',
-        'EONG', 'CEZP', 'VIE']
+    issuers_to_keep = ["MT", "ENEI", "ENGIE", "LAFARGE", "HEIG", "EDF", "ENI", "TTEF", "MAERS",
+        "EONG", "CEZP", "VIE"]
     bonds = bonds.loc[bonds['Parent Ticker'].isin(issuers_to_keep)]
     # use only bond that have that have a volume higher than 500_000_000
     bonds = bonds.loc[bonds['Original Amount Issued'] >= 500_000_000]
@@ -213,23 +210,18 @@ def preprocess_bonds(front_dates:pd.Series, save:bool = True)->dict[str: Bond]:
         for i, row in bonds.iterrows()
     }
 
-    # filter the bonds to only keep the ones that were found
-    bonds_list = {key: value for key, value in bonds_list.items() if not value.is_empty()}
+    # use only the bonds that have data
+    bonds_list = {
+        key: value
+        for key, value in bonds_list.items()
+        if not value.is_empty()
+    }
 
     # filter the data to only keep the dates in the front
     _ = [
-        value.filter_data(front_dates)
+        value.filter_data(dates)
         for key, value in bonds_list.items()
     ]
-
-    # save the dictionary to a .mat file
-    if save:
-        # convert to a dictionary of structures for matlab use
-        bonds_dict = [
-            value.to_matlab_cellarray()
-            for key, value in bonds_list.items()
-        ]
-        savemat(os.path.join(output_dir, 'Bonds.mat'), {'Bonds': bonds_dict})
 
     return bonds_list
 
@@ -276,10 +268,10 @@ Next_2.loc[(Next_2['Date'] >= third_from_last_expiry) &
     (Next_2['Date'] < penultimate_expiry), 'Expiry'] = next_expiry
 Next_2.loc[Next_2['Date'] >= penultimate_expiry, 'Expiry'] = next_2_expiry
 
-# # preprocess the bonds
-# preprocess_bonds(front_december['Date'])
+# preprocess the bonds
+Bonds = preprocess_bonds(common_dates)
 
-if this.save_data:
+if __name__ == '__main__':
     # save the data
     Volumes_March.to_csv(os.path.join(this.preprocessed_dir, 'Volumes_March.csv'), index=False)
     Volumes_June.to_csv(os.path.join(this.preprocessed_dir, 'Volumes_June.csv'), index=False)
@@ -288,3 +280,14 @@ if this.save_data:
     Next.to_csv(os.path.join(this.preprocessed_dir, 'Next.csv'), index=False)
     Next_2.to_csv(os.path.join(this.preprocessed_dir, 'Next_2.csv'), index=False)
     Daily_Price.to_csv(os.path.join(this.preprocessed_dir, 'Daily_Price.csv'), index=False)
+
+# if this is not the main file, delete unnecessary variables
+if __name__ != '__main__':
+    del common_dates
+    del front_expiry
+    del front_expiries
+    del fourth_from_last_expiry
+    del next_expiry
+    del next_2_expiry
+    del penultimate_expiry
+    del third_from_last_expiry

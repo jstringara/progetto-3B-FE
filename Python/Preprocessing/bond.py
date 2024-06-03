@@ -1,16 +1,18 @@
-import pandas as pd
 import os
+import sys
 import datetime
+import pandas as pd
 
 # Bond class
 class Bond:
 
     # class attribute to keep track of the number of bonds that were not found
     __unfound_info = []
-    # class attribute (we only want data for Phase III)
+    # date range for the data
     __start_date = datetime.datetime(2013, 1, 1)
-    # __end_date = datetime.datetime(2021, 12, 31) # Phase III
-    __end_date = datetime.datetime(2022, 12, 31)
+    __end_date = datetime.datetime(2022, 10, 28)
+    # dict to hold already loaded data
+    __loaded_data = {}
 
     def __init__(self, code, coupon_rate, maturity_date, coupon_frequency, volume, issuer):
         """
@@ -85,21 +87,27 @@ class Bond:
         Load the data for the bond from the csv file of the parent company.
         """
         # load the data for the parent company
-        data_dir = 'Data/'
+        data_dir = '../Data/'
         bonds_dir = 'Bonds/'
 
-        parent_data = pd.read_csv(os.path.join(data_dir, bonds_dir, f'{self.__issuer}.csv'),
-            parse_dates=['Date'], dayfirst=False)
-        # drop the first and second columns
-        parent_data = parent_data.drop(columns=[parent_data.columns[0], parent_data.columns[1]])
+        # check if the data was already loaded
+        if self.__issuer in self.__loaded_data:
+            parent_data = self.__loaded_data[self.__issuer]
+        # otherwise, load the data and save it
+        else:
+            parent_data = pd.read_csv(os.path.join(data_dir, bonds_dir, f'{self.__issuer}.csv'),
+                parse_dates=['Date'], dayfirst=False)
+            # drop the first and second columns
+            parent_data = parent_data.drop(columns=[parent_data.columns[0], parent_data.columns[1]])
+            self.__loaded_data[self.__issuer] = parent_data
 
         # try to extract the data
         out_df = pd.DataFrame()
         try:
             out_df = parent_data[['Date', self.__code]]
-            # select only the dates that are in the range of Phase III
-            out_df = out_df.loc[out_df['Date'] >= self.__start_date]
-            out_df = out_df.loc[out_df['Date'] <= self.__end_date]
+            # select only the dates that are in the range
+            out_df = out_df.loc[out_df['Date'] > self.__start_date]
+            out_df = out_df.loc[out_df['Date'] < self.__end_date]
         except KeyError:
             # add it to the unfound bonds
             self.__unfound_info.append(self)
@@ -146,18 +154,13 @@ class Bond:
         # compute the coupon dates
         coupon_dates = [
             self.__maturity_date - pd.DateOffset(months=coupon_time_diff * i)
-            for i in reversed(range(num_coupons))
+            for i in reversed(range(num_coupons+1))
         ]
         coupon_dates.sort()
 
         # if there are no coupon dates, add the maturity date
         if not coupon_dates:
             coupon_dates.append(self.__maturity_date)
-
-        # # move to business days if the date is not a business day
-        # for i, date in enumerate(coupon_dates):
-        #     if date.weekday() in [5, 6]:
-        #         coupon_dates[i] = date - pd.DateOffset(weekday=0)
 
         return coupon_dates
 
@@ -176,24 +179,3 @@ class Bond:
         - DataFrame with the filtered data.
         """
         self.__data = self.__data.loc[self.__data['Date'].isin(dates)]
-
-    def to_matlab_cellarray(self)->dict:
-        """
-        Convert the data of the bond to a Matlab cell array.
-        """
-        # convert the data to a dictionary
-        data_dict = {
-            'Code': self.__code,
-            'CouponRate': self.__coupon_rate,
-            'MaturityDate': self.__maturity_date.strftime('%Y-%m-%d'),
-            'CouponFrequency': self.__coupon_frequency,
-            'Volume': self.__volume,
-            'Issuer': self.__issuer,
-            'FirstQuote': self.__first_quote.strftime('%Y-%m-%d') if not pd.isnull(self.__first_quote) else '',
-            'CouponDates': [date.strftime('%Y-%m-%d') for date in self.__coupon_dates],
-            'Dates': self.__data['Date'].dt.strftime('%Y-%m-%d').tolist(),
-            'Prices': self.__data[self.__code]
-        }
-
-        return data_dict
-
