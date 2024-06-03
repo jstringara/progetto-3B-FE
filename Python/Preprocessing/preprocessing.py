@@ -1,6 +1,7 @@
 import os
 import sys
 import datetime
+import numpy as np
 import pandas as pd
 
 # import the Bond class from the bond.py file
@@ -291,6 +292,35 @@ def preprocess_open_interest(Front:pd.DataFrame, first_date:datetime.datetime = 
 
     return df
 
+# preprocess the extra variables
+def preprocess_extra_variables(dates:pd.Series)->pd.DataFrame:
+    """
+    Preprocess the extra variables.
+    Input:
+    - dates: pd.Series with the dates to consider.
+    Output:
+    - DataFrame with the columns 'Date' and 'Extra'.
+    """
+
+    # directory of the data
+    data_dir = this.data_dir
+
+    # load the data for the extra variables
+    extra_variables = pd.read_csv(os.path.join(data_dir, 'Extra_Variables.csv'),
+        parse_dates=['Date'], usecols=['Date', 'SPX', 'VIX', 'WTI'])
+
+    # filter the data to only keep the dates in the front
+    extra_variables = extra_variables.loc[extra_variables['Date'].isin(dates)]
+
+    # fill the values with the previous value
+    extra_variables = extra_variables.ffill()
+
+    # take the log returns of SPX and WTI
+    extra_variables['SPX'] = np.log(1 + extra_variables['SPX'].pct_change())
+    extra_variables['WTI'] = np.log(1 + extra_variables['WTI'].pct_change())
+
+    return extra_variables
+
 # preprocess the volumes of the futures contracts
 Volumes_March = preprocess_Volumes_front_Month('March')
 Volumes_June = preprocess_Volumes_front_Month('June')
@@ -340,6 +370,9 @@ Bonds = preprocess_bonds(common_dates)
 # preprocess the open interest
 Open_Interest = preprocess_open_interest(Front)
 
+# preprocess the extra variables
+Extra_Variables = preprocess_extra_variables(common_dates)
+
 if __name__ == '__main__':
     # save the data
     Volumes_March.to_csv(os.path.join(this.preprocessed_dir, 'Volumes_March.csv'), index=False)
@@ -350,6 +383,7 @@ if __name__ == '__main__':
     Next_2.to_csv(os.path.join(this.preprocessed_dir, 'Next_2.csv'), index=False)
     Daily_Price.to_csv(os.path.join(this.preprocessed_dir, 'Daily_Price.csv'), index=False)
     Open_Interest.to_csv(os.path.join(this.preprocessed_dir, 'Open_Interest.csv'), index=False)
+    Extra_Variables.to_csv(os.path.join(this.preprocessed_dir, 'Extra_Variables.csv'), index=False)
     
 
 # if this is not the main file, delete unnecessary variables
