@@ -9,9 +9,9 @@ phase_IV_dates = [datetime(2013, 1, 1), datetime(2022, 10, 28)];
 OIS_Data = preprocess_OIS(phase_IV_dates(1), phase_IV_dates(2));
 
 % create the Volumes for March, June and September
-Volumes_march_front = preprocessVolumesMonth('March', phase_IV_dates(1), phase_IV_dates(2));
-Volumes_june_front = preprocessVolumesMonth('June', phase_IV_dates(1), phase_IV_dates(2));
-Volumes_sept_front = preprocessVolumesMonth('September', phase_IV_dates(1), phase_IV_dates(2));
+Volumes_march_front = preprocessVolumesMonth('March', phase_III_dates(1), phase_III_dates(2));
+Volumes_june_front = preprocessVolumesMonth('June', phase_III_dates(1), phase_III_dates(2));
+Volumes_sept_front = preprocessVolumesMonth('September', phase_III_dates(1), phase_III_dates(2));
 
 % preprocess the December data
 Front_December = preprocessDecember(0, phase_IV_dates(1), phase_IV_dates(2));

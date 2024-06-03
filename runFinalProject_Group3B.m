@@ -50,14 +50,14 @@ Volumes_fronts_months = [
     Volumes_march_front.Volume;
     Volumes_june_front.Volume;
     Volumes_sept_front.Volume;
-    Front_December.Volume
-    ];
+    Front_December(Front_December.Date < phase_III_dates(2), :).Volume
+];
 
 grouping = [
     zeros(height(Volumes_march_front),1);
     ones(height(Volumes_june_front),1);
     2*ones(height(Volumes_sept_front),1);
-    3*ones(height(Front_December),1)
+    3*ones(height(Front_December(Front_December.Date < phase_III_dates(2), :)),1)
     ];
 
 plot_Volumes_fronts_months(Volumes_fronts_months, grouping, true)
@@ -65,15 +65,15 @@ plot_Volumes_fronts_months(Volumes_fronts_months, grouping, true)
 % boxplot of the December front and next
 
 Volumes_dec = [
-    Front_December.Volume;
-    Next_December.Volume;
-    Next_2_December.Volume
+    Front_December(Front_December.Date < phase_III_dates(2), :).Volume;
+    Next_December(Next_December.Date < phase_III_dates(2), :).Volume;
+    Next_2_December(Next_2_December.Date < phase_III_dates(2), :).Volume
     ];
 
 grouping = [
-    zeros(height(Front_December),1);
-    ones(height(Next_December),1);
-    2*ones(height(Next_2_December),1)
+    zeros(height(Front_December(Front_December.Date < phase_III_dates(2),:)), 1);
+    ones(height(Next_December(Next_December.Date < phase_III_dates(2),:)), 1);
+    2*ones(height(Next_2_December(Next_2_December.Date < phase_III_dates(2),:)), 1)
     ];
 
 plot_Volumes_december(Volumes_dec, grouping, true)
