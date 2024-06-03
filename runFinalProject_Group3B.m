@@ -129,11 +129,11 @@ plot_C_Z_r(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III, tru
 
 %% Point 6.3) Mean and Variance of all three series for phase III
 
-summaryTable_C_Z_r = summaryTable(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III, true);
+summaryTable(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III, true);
 
 %% Point 6.4) Check that they are all integrated of order 1
 
-summaryTable_ADF = summaryADF(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III, true);
+summaryADF(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III, true);
 
 %% Point 7) Johansen Test to find cointegration between these three
 
@@ -164,7 +164,7 @@ xlabel('Date')
 
 Delta_C = [NaN; diff(C_spread.C_Spread)];
 
-% plot_ACF_PACF(Delta_C, '\Delta C')
+% plot_ACF_PACF(Delta_C, '\Delta C', true)
 
 %% Point 8.3) Pearson correlation test
 
@@ -190,17 +190,6 @@ Y_phase_III = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phas
 mdl_VI = fitlm(Y_phase_III, ...
     'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + WTI + SPX + VIX + Volatility' ...
 );
-
-% print the summary
-disp(mdl_VI)
-
-% get the AIC and BIC
-AIC = mdl_VI.ModelCriterion.AIC;
-BIC = mdl_VI.ModelCriterion.BIC;
-
-% display AIC and BIC
-disp(['The AIC of the model is: ', num2str(AIC)]);
-disp(['The BIC of the model is: ', num2str(BIC)]);
 
 %% Point 8.5 Various models
 
@@ -233,27 +222,7 @@ mdl_V = fitlm(Y_phase_III, 'Delta_C ~ WTI + SPX + VIX + Volatility');
 
 %% Results table of all the 6 models
 
-% create the table
-Models = ["Model I"; "Model II"; "Model III"; "Model IV"; "Model V"; "Model VI"];
-% a row for each regression coefficient of model VI, Obs, BIC and AIC
-rows = ["Delta_C_lag1", "Delta_C_lag2", "Delta_C_lag3", "Delta_Z", "Delta_r", "ect_lag1", "WTI", ...
-    "SPX", "VIX", "Volatility", "(Intercept)", "Obs", "BIC", "AIC"];
-% create the table (it contains only strings)
-T = table('Size', [length(rows), length(Models)], 'VariableNames', Models, 'RowNames', rows, ...
-    'VariableTypes', repmat({'string'}, 1, length(Models)));
-
-% fill the table
-T = composeTable(T, 'Model I', mdl_I, rows);
-T = composeTable(T, 'Model II', mdl_II, rows);
-T = composeTable(T, 'Model III', mdl_III, rows);
-T = composeTable(T, 'Model IV', mdl_IV, rows);
-T = composeTable(T, 'Model V', mdl_V, rows);
-T = composeTable(T, 'Model VI', mdl_VI, rows);
-
-disp(T)
-
-% save to a csv file
-writetable(T, 'Results/RegressionResults.csv', 'WriteRowNames', true)
+summaryModels(mdl_I, mdl_II, mdl_III, mdl_IV, mdl_V, mdl_VI, true);
 
 %% EWMA model
 
