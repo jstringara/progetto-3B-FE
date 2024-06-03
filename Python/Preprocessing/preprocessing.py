@@ -9,6 +9,9 @@ from bond import Bond
 # this is a pointer to the module object instance itself.
 this = sys.modules[__name__]
 
+# save the data for checking
+this.save_data = __name__ == '__main__'
+
 # create module level variables for the dates for Phase III and Phase IV
 this.PHASE_III_START = datetime.datetime(2013, 1, 1)
 this.PHASE_III_END = datetime.datetime(2021, 1, 1)
@@ -28,7 +31,7 @@ if not os.path.exists(this.preprocessed_dir):
     os.makedirs(this.preprocessed_dir)
 
 def preprocess_Volumes_front_Month(month:str, first_date:datetime.datetime = this.PHASE_III_START,
-    last_date:datetime.datetime = this.PHASE_III_END, save:bool = True)->pd.DataFrame:
+    last_date:datetime.datetime = this.PHASE_III_END)->pd.DataFrame:
     """
     Function to preprocess the data of the volumes of the futures contracts in a given month.
     Month can be either 'March', 'June', 'September'.
@@ -36,7 +39,6 @@ def preprocess_Volumes_front_Month(month:str, first_date:datetime.datetime = thi
     - month: string with the name of the month (either 'March', 'June' or 'September')
     - first_date: datetime object with the first date to consider. Default is the start of Phase III.
     - last_date: datetime object with the last date to consider. Default is the end of Phase III.
-    - save: boolean indicating whether to save the output to a csv file or not.
     Output:
     - DataFrame with the columns 'Date' and 'Volume'.
     """
@@ -46,8 +48,6 @@ def preprocess_Volumes_front_Month(month:str, first_date:datetime.datetime = thi
 
     # read the xlsx file 'Volume_extra_futures.xlsx' and store it in a DataFrame
     data_dir = this.data_dir
-    # output dir
-    output_dir = this.preprocessed_dir
 
     extra_futures = pd.read_excel(
         os.path.join(data_dir, 'Volumes_extra_futures.xlsx'),
@@ -84,21 +84,16 @@ def preprocess_Volumes_front_Month(month:str, first_date:datetime.datetime = thi
         # update the previous date
         prev_date = next_date
 
-    if save:
-        # save the DataFrame to a csv file without the index
-        Volumes.to_csv(os.path.join(output_dir, f'Volumes_{month}.csv'), index=False)
-
     return Volumes
 
 def preprocess_December(years_offset:int = 0, first_date:datetime.datetime = this.PHASE_III_START,
-    last_date:datetime.datetime = this.PHASE_IV_END, save:bool = True)->pd.DataFrame:
+    last_date:datetime.datetime = this.PHASE_IV_END)->pd.DataFrame:
     """
     Function to preprocess the data of the volumes of the futures contracts in December.
     Input:
     - years_offset: integer with the number of years to go back from the current year.
     - first_date: datetime object with the first date to consider. Default is the start of Phase III.
     - last_date: datetime object with the last date to consider. Default is the end of Phase IV.
-    - save: boolean indicating whether to save the output to a csv file or not.
     Output:
     - DataFrame with the columns 'Date', 'Volume', 'Price' and 'Expiry'.
     """
@@ -106,7 +101,6 @@ def preprocess_December(years_offset:int = 0, first_date:datetime.datetime = thi
     # directory of the data
     data_dir = this.data_dir
     futures_dir = this.futures_dir
-    output_dir = this.preprocessed_dir
 
     # initialize the DataFrame
     front_Dec = pd.DataFrame()
@@ -153,51 +147,32 @@ def preprocess_December(years_offset:int = 0, first_date:datetime.datetime = thi
         # update the previous date
         prev_date = next_date
     
-    # save the DataFrame to a csv file without the index
-    if save:
-        # compose the file name
-        if years_offset == 0:
-            file_name = 'Front_December.csv'
-        elif years_offset == 1:
-            file_name = 'Next_December.csv'
-        else:
-            file_name = f'Next_{years_offset}_December.csv'
-            
-        front_Dec.to_csv(os.path.join(output_dir, file_name), index=False)
-
     return front_Dec
 
-def preprocess_daily_price(front_dates:pd.Series, save:bool = True)->pd.DataFrame:
+def preprocess_daily_price(first_date:datetime.datetime = this.PHASE_III_START,
+    last_date:datetime.datetime = this.PHASE_IV_END)->pd.DataFrame:
     """
     Preprocess the daily price of the futures contracts.
     Input:
-    - front_dates: Series with the dates of the front futures contracts.
-    - save: boolean indicating whether to save the output to a csv file or not.
+    - first_date: datetime object with the first date to consider. Default is the start of Phase III.
+    - last_date: datetime object with the last date to consider. Default is the end of Phase IV.
     Output:
     - DataFrame with the columns 'Date' and 'Price'.
     """
 
     # load the data for the daily futures
-    data_dir = 'Data/'
-    output_dir = 'Preprocessed/'
+    data_dir = this.data_dir
 
     daily_price = pd.read_csv(os.path.join(data_dir, 'Daily_Future.csv'),
         usecols=['Date', 'CLOSE'], parse_dates=['Date'])
 
-    # keep only the dates that are also in the Volumes_dec_front
-    # this also ensures that they are in the range of the Phase III
-    daily_price = daily_price.loc[daily_price['Date'].isin(front_dates)]
-    # fill the open with the close and take the average
-    daily_price['Price'] = daily_price['CLOSE']
-    # drop the CLOSE column
-    daily_price = daily_price.drop(columns=['CLOSE'])
+    # rename CLOSE to Price
+    daily_price = daily_price.rename(columns={'CLOSE': 'Price'})
 
-    # save the DataFrame to a csv file without the index
-    if save:
-        daily_price.to_csv(
-            os.path.join(output_dir, 'Daily_Future.csv'),
-            index=False)
-    
+    # select only the dates for the given period
+    daily_price = daily_price.loc[daily_price['Date'] >= first_date].loc[
+        daily_price['Date'] < last_date]
+
     return daily_price
 
 # read the data of the bonds and pass them to matlab
@@ -262,11 +237,54 @@ def preprocess_bonds(front_dates:pd.Series, save:bool = True)->dict[str: Bond]:
 Volumes_March = preprocess_Volumes_front_Month('March')
 Volumes_June = preprocess_Volumes_front_Month('June')
 Volumes_Sep = preprocess_Volumes_front_Month('September')
+
 # preprocess the volumes of the futures contracts in December (front, next and second next)
 Front = preprocess_December()
 Next = preprocess_December(years_offset=1)
 Next_2 = preprocess_December(years_offset=2)
-# # preprocess the daily price of the futures contracts
-# preprocess_daily_price(front_december['Date'])
+
+# preprocess the daily price of the futures contracts
+Daily_Price = preprocess_daily_price()
+
+# keep only the dates in common between the Daily Price and the Futures
+common_dates = set(Daily_Price['Date']).intersection(set(Front['Date']))
+commond_dates = pd.Series(list(common_dates))
+
+# filter the data to only keep the common dates
+Front = Front.loc[Front['Date'].isin(common_dates)]
+Next = Next.loc[Next['Date'].isin(common_dates)]
+Next_2 = Next_2.loc[Next_2['Date'].isin(common_dates)]
+Daily_Price = Daily_Price.loc[Daily_Price['Date'].isin(common_dates)]
+
+# fix the expiries of the front, next and next_2
+front_expiry = datetime.datetime(2022, 12, 19)
+Front.loc[Front['Expiry'] == this.PHASE_IV_END, 'Expiry'] = front_expiry
+
+front_expiries = Front['Expiry'].unique()
+third_from_last_expiry = front_expiries[-3]
+penultimate_expiry = front_expiries[-2]
+next_expiry = datetime.datetime(2023, 12, 18)
+Next.loc[(Next['Date'] >= third_from_last_expiry) & 
+    (Next['Date'] < penultimate_expiry), 'Expiry'] = next_expiry
+Next.loc[Next['Date'] >= penultimate_expiry, 'Expiry'] = next_expiry
+
+fourth_from_last_expiry = front_expiries[-4]
+next_2_expiry = datetime.datetime(2024, 12, 23)
+Next_2.loc[(Next_2['Date'] >= fourth_from_last_expiry) &
+    (Next_2['Date'] < third_from_last_expiry), 'Expiry'] = front_expiry
+Next_2.loc[(Next_2['Date'] >= third_from_last_expiry) &
+    (Next_2['Date'] < penultimate_expiry), 'Expiry'] = next_expiry
+Next_2.loc[Next_2['Date'] >= penultimate_expiry, 'Expiry'] = next_2_expiry
+
 # # preprocess the bonds
 # preprocess_bonds(front_december['Date'])
+
+if this.save_data:
+    # save the data
+    Volumes_March.to_csv(os.path.join(this.preprocessed_dir, 'Volumes_March.csv'), index=False)
+    Volumes_June.to_csv(os.path.join(this.preprocessed_dir, 'Volumes_June.csv'), index=False)
+    Volumes_Sep.to_csv(os.path.join(this.preprocessed_dir, 'Volumes_Sep.csv'), index=False)
+    Front.to_csv(os.path.join(this.preprocessed_dir, 'Front.csv'), index=False)
+    Next.to_csv(os.path.join(this.preprocessed_dir, 'Next.csv'), index=False)
+    Next_2.to_csv(os.path.join(this.preprocessed_dir, 'Next_2.csv'), index=False)
+    Daily_Price.to_csv(os.path.join(this.preprocessed_dir, 'Daily_Price.csv'), index=False)
