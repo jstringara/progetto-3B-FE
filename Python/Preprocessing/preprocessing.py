@@ -100,7 +100,7 @@ def preprocess_December(years_offset:int = 0, first_date:datetime.datetime = thi
     - last_date: datetime object with the last date to consider. Default is the end of Phase IV.
     - save: boolean indicating whether to save the output to a csv file or not.
     Output:
-    - DataFrame with the columns 'Date' and 'Volume'.
+    - DataFrame with the columns 'Date', 'Volume', 'Price' and 'Expiry'.
     """
 
     # directory of the data
@@ -114,8 +114,7 @@ def preprocess_December(years_offset:int = 0, first_date:datetime.datetime = thi
 
     years = range(first_date.year, last_date.year + 1)
 
-    # for year in range(2013, 2022): # original range
-    for year in range(2013, 2023):
+    for year in years:
 
         # find the last quoted date
         file_name = f'ICE_FUT_{str(year)[-2:]}.csv'
@@ -123,8 +122,7 @@ def preprocess_December(years_offset:int = 0, first_date:datetime.datetime = thi
         front_volumes = pd.read_csv(os.path.join(data_dir, futures_dir, file_name),
             usecols=['Date', 'CLOSE', 'VOLUME'], parse_dates=['Date'])
         # find the last quoted date (expiry date) as the last date where there is a value in the column
-        last_date = front_volumes.loc[front_volumes['VOLUME'].notnull(), 'Date'].max()
-        # last_date = last_date - pd.DateOffset(months=1)
+        next_date = front_volumes.loc[front_volumes['VOLUME'].notnull(), 'Date'].max()
 
         # if there is an offset, we need to find the corresponding file
         if years_offset > 0:
@@ -137,7 +135,7 @@ def preprocess_December(years_offset:int = 0, first_date:datetime.datetime = thi
         expiry_date = selected_data.loc[selected_data['CLOSE'].notnull(), 'Date'].max()
         # select the needed data
         selected_data = selected_data.loc[selected_data['Date'] >= prev_date].loc[
-            selected_data['Date'] < last_date, ['Date', 'VOLUME', 'CLOSE']]
+            selected_data['Date'] < next_date, ['Date', 'VOLUME', 'CLOSE']]
         # select only the date and the volume
         selected_data = pd.DataFrame(
             {
@@ -153,15 +151,8 @@ def preprocess_December(years_offset:int = 0, first_date:datetime.datetime = thi
         # add the date to the DataFrame
         front_Dec = pd.concat([front_Dec, selected_data])
         # update the previous date
-        prev_date = last_date
+        prev_date = next_date
     
-    # finally, keep only the dates that also have an associated daily price
-    daily_dates = pd.read_csv(os.path.join(data_dir, 'Daily_Future.csv'),
-        usecols=['Date'], parse_dates=['Date'])
-    daily_dates = daily_dates.loc[daily_dates['Date'].isin(front_Dec['Date'])]
-    # filter the Volumes_Dec DataFrame
-    front_Dec = front_Dec.loc[front_Dec['Date'].isin(daily_dates['Date'])]
-
     # save the DataFrame to a csv file without the index
     if save:
         # compose the file name
@@ -272,9 +263,9 @@ Volumes_March = preprocess_Volumes_front_Month('March')
 Volumes_June = preprocess_Volumes_front_Month('June')
 Volumes_Sep = preprocess_Volumes_front_Month('September')
 # preprocess the volumes of the futures contracts in December (front, next and second next)
-front_december = preprocess_December()
-# preprocess_December(years_offset=1)
-# preprocess_December(years_offset=2)
+Front = preprocess_December()
+Next = preprocess_December(years_offset=1)
+Next_2 = preprocess_December(years_offset=2)
 # # preprocess the daily price of the futures contracts
 # preprocess_daily_price(front_december['Date'])
 # # preprocess the bonds
