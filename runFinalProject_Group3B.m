@@ -168,18 +168,7 @@ Delta_C = [NaN; diff(C_spread.C_Spread)];
 
 %% Point 8.3) Pearson correlation test
 
-% build the matrix to compute the correlation
-X = [Extra_Variables.SPX, Extra_Variables.VIX, Extra_Variables.WTI, v_garch];
-
-% delete the nan values
-X = rmmissing(X);
-
-[cor_coeff,P_value_coeff] = corrcoef(X);
-
-disp('The matrix correlation coefficients of the extravariables is:')
-disp(cor_coeff)
-disp('The P-values of the correlation coefficients of the extravariables is:')
-disp(P_value_coeff)
+performPearsonTest(Extra_Variables, v_garch, true);
 
 %% Point 8.4) Error correction model
 
