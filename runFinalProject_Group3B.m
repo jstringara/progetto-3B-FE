@@ -60,7 +60,7 @@ grouping = [
     3*ones(height(Front_December),1)
     ];
 
-% plot_Volumes_fronts_months(Volumes_fronts_months, grouping, true)
+plot_Volumes_fronts_months(Volumes_fronts_months, grouping, true)
 
 % boxplot of the December front and next
 
@@ -76,7 +76,7 @@ grouping = [
     2*ones(height(Next_2_December),1)
     ];
 
-% plot_Volumes_december(Volumes_dec, grouping, true)
+plot_Volumes_december(Volumes_dec, grouping, true)
 
 %% Point 3) compute the C-Spread for the EUA futures
 
@@ -91,7 +91,7 @@ C_spread_next = compute_C_Spread(Next_December, Daily_Future, risk_free_rate_nex
 C_spread_Front_phase_III = C_spread_front(C_spread_front.Date < phase_III_dates(2), :);
 C_spread_Next_phase_III = C_spread_next(C_spread_next.Date < phase_III_dates(2), :);
 
-% plot_C_front_next(C_spread_Front_phase_III, C_spread_Next_phase_III, save_figure)
+plot_C_front_next(C_spread_Front_phase_III, C_spread_Next_phase_III, true);
 
 %% Point 3.b) Compute a single C_spread time series with roll-over rule of 15th of November
 
@@ -101,7 +101,7 @@ C_spread_phase_III = C_spread(C_spread.Date < phase_III_dates(2), :);
 
 %% Plot the C-Spread
 
-% plot_C(C_spread, true)
+plot_C(C_spread, true)
 
 %% Point 4) Compute the Z-Spread time series
 
@@ -124,9 +124,9 @@ plot_C_Z_r(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III, tru
 %% Point 6.2) Plot ACF and PACF of the Z-Spread and C-Spread
 
 % plot the ACF and PACF
-% plot_ACF_PACF(Z_spread_phase_III, 'Z-Spread', true)
-% plot_ACF_PACF(C_spread_phase_III, 'C-Spread', true)
-% plot_ACF_PACF(risk_free_rate_phase_III, 'Risk-Free Rate', true)
+plot_ACF_PACF(Z_spread_phase_III, 'Z-Spread', true)
+plot_ACF_PACF(C_spread_phase_III, 'C-Spread', true)
+plot_ACF_PACF(risk_free_rate_phase_III, 'Risk-Free Rate', true)
 
 %% Point 6.3) Mean and Variance of all three series for phase III
 
@@ -165,7 +165,7 @@ xlabel('Date')
 
 Delta_C = [NaN; diff(C_spread.C_Spread)];
 
-% plot_ACF_PACF(Delta_C, '\Delta C', true)
+plot_ACF_PACF(Delta_C, '\Delta C', true)
 
 %% Point 8.3) Pearson correlation test
 

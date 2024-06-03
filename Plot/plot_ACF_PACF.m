@@ -17,6 +17,6 @@ sgtitle(title)
 % if save_figure is true, save the figure
 if save_figure
     saveas(gcf, 'Results/ACF_PACF.png')
-edn
+end
 
 end
