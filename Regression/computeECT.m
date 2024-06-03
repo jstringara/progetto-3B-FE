@@ -1,4 +1,4 @@
-function ect = computeECT(C_spread, Z_spread, risk_free_rate, save_figure)
+function ect = computeECT(C_spread, Z_spread, risk_free_rate, save_figure, print_table)
 
 Y_joc = table( ...
     C_spread.Date, ...
@@ -44,7 +44,9 @@ end
 % critical values
 T{:, 4} = string(round(cValue{2, 1:3}, 2))';
 
-disp(T)
+if print_table
+    disp(T)
+end
 
 % save the table
 if save_figure
@@ -62,7 +64,9 @@ T = table('Size', [1, 3], 'VariableNames', {'C_Spread', 'Z_Spread', 'Risk_Free_R
     'RowNames', {'Cointegration_Vector'}, 'VariableTypes', {'double', 'double', 'double'});
 T{1,:} = round(B', 2);
 
-disp(T)
+if print_table
+    disp(T)
+end
 
 if save_figure
     writetable(T, 'Results/cointegration_vector.csv', 'WriteRowNames', true)

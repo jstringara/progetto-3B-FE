@@ -138,7 +138,7 @@ summaryADF(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III, tru
 
 %% Point 7) Johansen Test to find cointegration between these three
 
-ect_phase_III = computeECT(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III, true);
+ect_phase_III = computeECT(C_spread_phase_III, Z_spread_phase_III, risk_free_rate_phase_III, true, true);
 
 % test the stationarity of the error correction term
 %[h,pValue,stat,cValue,mles] = adftest(ect, 'Display', 'summary');
@@ -259,7 +259,7 @@ disp(['The BIC of the model with EWMA is: ', num2str(BIC)]);
 
 %% Point 9.b.1) Estimate the error correction term for phase IV
 
-ect_phase_IV = computeECT(C_spread, Z_spread, risk_free_rate);
+ect_phase_IV = computeECT(C_spread, Z_spread, risk_free_rate, false, false);
 
 %% Point 9.b.2) Estimate the error correction model for phase IV
 
@@ -284,7 +284,7 @@ disp(['The BIC of the model for phase IV is: ', num2str(BIC)]);
 C_spread = aggregate_C_Spread(Front_December, C_spread_front, Next_December, C_spread_next, 2, OpenInterest);
 
 % compute the ECT
-ect_phase_III = computeECT(C_spread, Z_spread, risk_free_rate);
+ect_phase_III = computeECT(C_spread, Z_spread, risk_free_rate, false, false);
 
 % compute the regression
 Y_phase_III = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phase_III, ...
@@ -308,7 +308,7 @@ disp(['The BIC of the model for phase IV is: ', num2str(BIC)]);
 C_spread = aggregate_C_Spread(Front_December, C_spread_front, Next_December, C_spread_next, 3, OpenInterest);
 
 % compute the ECT
-ect_phase_III = computeECT(C_spread, Z_spread, risk_free_rate);
+ect_phase_III = computeECT(C_spread, Z_spread, risk_free_rate, false, false);
 
 % compute the regression
 Y_phase_III = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phase_III, ...
@@ -332,7 +332,7 @@ disp(['The BIC of the model for phase IV is: ', num2str(BIC)]);
 C_spread = aggregate_C_Spread(Front_December, C_spread_front, Next_December, C_spread_next, 4, OpenInterest);
 
 % compute the ECT
-ect_phase_III = computeECT(C_spread, Z_spread, risk_free_rate);
+ect_phase_III = computeECT(C_spread, Z_spread, risk_free_rate, false, false);
 
 % compute the regression
 Y_phase_III = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phase_III, ...
@@ -366,7 +366,7 @@ x = [
     Y_qr.Delta_C_lag1, Y_qr.Delta_C_lag2, Y_qr.Delta_C_lag3, ...
     Y_qr.Delta_Z, Y_qr.Delta_r, Y_qr.ect_lag1, ...
     Y_qr.WTI, Y_qr.SPX, Y_qr.VIX, Y_qr.Volatility
-    ];
+];
 
 % estimate matrix to store the estimates
 estimates = zeros(width(x) + 1, 8);
