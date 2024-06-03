@@ -1,17 +1,40 @@
 import os
+import sys
 import datetime
 import pandas as pd
-from scipy.io import savemat
 
 # import the Bond class from the bond.py file
 from bond import Bond
 
-def preprocess_Volumes_front_Month(month:str, save:bool = True)->pd.DataFrame:
+# this is a pointer to the module object instance itself.
+this = sys.modules[__name__]
+
+# create module level variables for the dates for Phase III and Phase IV
+this.PHASE_III_START = datetime.datetime(2013, 1, 1)
+this.PHASE_III_END = datetime.datetime(2021, 1, 1)
+this.PHASE_IV_START = datetime.datetime(2021, 1, 1)
+this.PHASE_IV_END = datetime.datetime(2022, 10, 28)
+
+# create a module level variable for the directories
+this.data_dir = '../Data/'
+this.preprocessed_dir = 'Preprocessed/'
+
+# check that the directories exist
+if not os.path.exists(this.data_dir):
+    raise FileNotFoundError(f'The directory {this.data_dir} does not exist.')
+# if the preprocessed directory does not exist, create it
+if not os.path.exists(this.preprocessed_dir):
+    os.makedirs(this.preprocessed_dir)
+
+def preprocess_Volumes_front_Month(month:str, first_date:datetime.datetime = this.PHASE_III_START,
+    last_date:datetime.datetime = this.PHASE_III_END, save:bool = True)->pd.DataFrame:
     """
     Function to preprocess the data of the volumes of the futures contracts in a given month.
     Month can be either 'March', 'June', 'September'.
     Input:
     - month: string with the name of the month (either 'March', 'June' or 'September')
+    - first_date: datetime object with the first date to consider. Default is the start of Phase III.
+    - last_date: datetime object with the last date to consider. Default is the end of Phase III.
     - save: boolean indicating whether to save the output to a csv file or not.
     Output:
     - DataFrame with the columns 'Date' and 'Volume'.
@@ -21,51 +44,52 @@ def preprocess_Volumes_front_Month(month:str, save:bool = True)->pd.DataFrame:
         raise ValueError('The month should be either "March", "June" or "September".')
 
     # read the xlsx file 'Volume_extra_futures.xlsx' and store it in a DataFrame
-    data_dir = 'Data/'
+    data_dir = this.data_dir
     # output dir
-    output_dir = 'Preprocessed/'
+    output_dir = this.preprocessed_dir
 
-    extra_futures_march = pd.read_excel(
+    extra_futures = pd.read_excel(
         os.path.join(data_dir, 'Volumes_extra_futures.xlsx'),
         sheet_name=month)
 
-    # select only the dates for the Phase III (2013-2021)
-    extra_futures_march = extra_futures_march.loc[
-        extra_futures_march['Date'] >= datetime.datetime(2013, 1, 1)]
-    extra_futures_march = extra_futures_march.loc[
-        extra_futures_march['Date'] < datetime.datetime(2022, 1, 1)]
-
-    # extract the time series of the Month front.
-    # This means we find the closest date to the 15th of March for each year
+    # select only the dates for the given period
+    extra_futures = extra_futures.loc[
+        extra_futures['Date'] >= first_date].loc[
+        extra_futures['Date'] < last_date]
 
     # initialize variables for the cycle
-    column_names = extra_futures_march.columns
-    prev_date = datetime.datetime(2013, 1, 1) # only dates after this date will be considered
-    Volumes_march = pd.DataFrame()
+    column_names = extra_futures.columns
+    prev_date = first_date
+    Volumes = pd.DataFrame()
 
-    for year in range(2013, 2022+1):
+    # iterate over the years in the period
+    years = range(first_date.year, last_date.year + 2)
+    print(years)
+
+    for year in years:
+
         # find the corresponding column
         col_name = list(filter(lambda x: str(year) in x, column_names))[0]
+
         # find the last quoted date as the last date where there is a value in the column
-        last_date = extra_futures_march.loc[extra_futures_march[col_name].notnull(), 'Date'].max()
-        # bring it back a month
-        # last_date = last_date - pd.DateOffset(months=1)
+        next_date = extra_futures.loc[extra_futures[col_name].notnull(), 'Date'].max()
+        print(next_date)
         # select the needed data
-        selected_data = extra_futures_march.loc[extra_futures_march['Date'] > prev_date].loc[
-            extra_futures_march['Date'] <= last_date, ['Date', col_name]]
+        selected_data = extra_futures.loc[extra_futures['Date'] > prev_date].loc[
+            extra_futures['Date'] <= next_date, ['Date', col_name]]
         selected_data.columns = ['Date', 'Volume']
         # fill the NaN values with 0
         selected_data['Volume'] = selected_data['Volume'].fillna(0)
-        # find the dates between the last date and the previous date
-        Volumes_march = pd.concat([Volumes_march, selected_data])
+        # add the selected data to the DataFrame
+        Volumes = pd.concat([Volumes, selected_data])
         # update the previous date
-        prev_date = last_date
+        prev_date = next_date
 
     if save:
         # save the DataFrame to a csv file without the index
-        Volumes_march.to_csv(os.path.join(output_dir, f'Volumes_{month}.csv'), index=False)
+        Volumes.to_csv(os.path.join(output_dir, f'Volumes_{month}.csv'), index=False)
 
-    return Volumes_march
+    return Volumes
 
 def preprocess_December(years_offset:int = 0, save:bool = True)->pd.DataFrame:
     """
@@ -241,14 +265,14 @@ def preprocess_bonds(front_dates:pd.Series, save:bool = True)->dict[str: Bond]:
 
 if __name__ == '__main__':
     # preprocess the volumes of the futures contracts
-    preprocess_Volumes_front_Month('March')
-    preprocess_Volumes_front_Month('June')
-    preprocess_Volumes_front_Month('September')
+    Volumes_March = preprocess_Volumes_front_Month('March')
+    Volumes_June = preprocess_Volumes_front_Month('June')
+    Volumes_Sep = preprocess_Volumes_front_Month('September')
     # preprocess the volumes of the futures contracts in December (front, next and second next)
-    front_december = preprocess_December()
-    preprocess_December(years_offset=1)
-    preprocess_December(years_offset=2)
-    # preprocess the daily price of the futures contracts
-    preprocess_daily_price(front_december['Date'])
-    # preprocess the bonds
-    preprocess_bonds(front_december['Date'])
+    # front_december = preprocess_December()
+    # preprocess_December(years_offset=1)
+    # preprocess_December(years_offset=2)
+    # # preprocess the daily price of the futures contracts
+    # preprocess_daily_price(front_december['Date'])
+    # # preprocess the bonds
+    # preprocess_bonds(front_december['Date'])
