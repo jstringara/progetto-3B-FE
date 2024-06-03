@@ -383,8 +383,8 @@ for i = 1:4
     
      % First bound (tau = 0.1 * i)
     tau_lb = 0.1 * i;
-    [estimate_lb, pvalue_lb, j_lb] = qr_standard(x, y, tau1, 'test', 'kernel', 'maxit', 5000, 'tol', 1e-10);
-    y_quantile_lb = estimate1(1) + x * estimate1(2:end);
+    [estimate_lb, pvalue_lb, j_lb] = qr_standard(x, y, tau_lb, 'test', 'kernel', 'maxit', 5000, 'tol', 1e-10);
+    y_quantile_lb = estimate_lb(1) + x * estimate_lb(2:end);
 
     % save the estimate and pvalue in the appropriate column of the matrix
     estimates(:, i) = estimate_lb;
