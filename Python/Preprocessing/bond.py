@@ -1,5 +1,4 @@
 import os
-import sys
 import datetime
 import pandas as pd
 
@@ -9,8 +8,8 @@ class Bond:
     # class attribute to keep track of the number of bonds that were not found
     __unfound_info = []
     # date range for the data
-    __start_date = datetime.datetime(2013, 1, 1)
-    __end_date = datetime.datetime(2022, 10, 28)
+    __start_date = None
+    __end_date = None
     # dict to hold already loaded data
     __loaded_data = {}
 
@@ -24,6 +23,10 @@ class Bond:
         - coupon_frequency: string with the frequency of the coupon payments.
         - issuer: string with the ticker of the issuer.
         """
+
+        # check if the start and end dates are set
+        if Bond.__start_date is None or Bond.__end_date is None:
+            raise ValueError('The start and end dates are not set.')
 
         # save the attributes
         self.__code = code
@@ -49,6 +52,17 @@ class Bond:
         Return the list of bonds that were not found.
         """
         return cls.__unfound_info
+
+    @classmethod
+    def set_date_range(cls, start_date:datetime.date, end_date:datetime.date)->None:
+        """
+        Set the date range for the data.
+        Input:
+        - start_date: datetime.date with the start date.
+        - end_date: datetime.date with the end date.
+        """
+        cls.__start_date = start_date
+        cls.__end_date = end_date
     
     def __repr__(self)->str:
         """
