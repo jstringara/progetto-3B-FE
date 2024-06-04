@@ -51,6 +51,7 @@ class Preprocessor:
         """
         Function to find the relevant dates for the data.
         """
+
         if self.__dates is None:
             # find the common dates between the futures and the daily price
             Daily_Price = self.preprocess_daily_price()
