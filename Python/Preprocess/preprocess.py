@@ -522,7 +522,7 @@ class Preprocessor:
         
         # filter the data to only keep the dates in the front
         OIS_rates = OIS_rates.loc[OIS_rates['Date'] >= first_date].loc[
-            OIS_rates['Date'] < last_date]
+            OIS_rates['Date'] <= last_date]
         
         # save the data inside the object
         self.__data['OIS_Data'] = OIS_rates
