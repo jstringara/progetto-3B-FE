@@ -4,7 +4,10 @@ import numpy as np
 import pandas as pd
 
 # import the Bond class from the bond.py file
-from bond import Bond
+if __name__ == '__main__':
+    from bond import Bond
+else:
+    from Preprocess.bond import Bond
 
 # preprocessor
 class Preprocess:
