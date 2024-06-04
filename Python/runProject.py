@@ -10,7 +10,9 @@ import os
 import pandas as pd
 
 # preprocess the data
-from preprocess import Preprocess
+from Preprocess.preprocess import Preprocess
 
-# initialize the preprocessor
-preprocessor = Preprocess()
+# initialize the preprocessor and load the data
+Preprocess()
+
+print(Preprocess() is Preprocess())
