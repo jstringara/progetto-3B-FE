@@ -46,6 +46,27 @@ class Preprocessor:
         # if the preprocessed directory does not exist, create it
         if not os.path.exists(self.__preprocessed_dir):
             os.makedirs(self.__preprocessed_dir)
+        
+        # load all the data
+        self.load_data()
+    
+    def load_data(self)->None:
+        """
+        Load the data from the preprocessed directory.
+        """
+
+        # load the data
+        self.preprocess_OIS_rates()
+        self.preprocess_Volumes_front_Month('March')
+        self.preprocess_Volumes_front_Month('June')
+        self.preprocess_Volumes_front_Month('September')
+        self.preprocess_December()
+        self.preprocess_December(years_offset=1)
+        self.preprocess_December(years_offset=2)
+        self.preprocess_daily_price()
+        self.preprocess_bonds()
+        self.preprocess_open_interest()
+        self.preprocess_extra_variables()
 
     def relevant_dates(self):
         """
@@ -493,16 +514,5 @@ class Preprocessor:
 if __name__ == '__main__':
 
     preprocessor = Preprocessor()
-    preprocessor.preprocess_OIS_rates()
-    preprocessor.preprocess_Volumes_front_Month('March')
-    preprocessor.preprocess_Volumes_front_Month('June')
-    preprocessor.preprocess_Volumes_front_Month('September')
-    preprocessor.preprocess_December()
-    preprocessor.preprocess_December(years_offset=1)
-    preprocessor.preprocess_December(years_offset=2)
-    preprocessor.preprocess_daily_price()
-    preprocessor.preprocess_bonds()
-    preprocessor.preprocess_open_interest()
-    preprocessor.preprocess_extra_variables()
 
     preprocessor.save_data()
