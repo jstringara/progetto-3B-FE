@@ -6,14 +6,13 @@ import pandas as pd
 # import the Bond class from the bond.py file
 from bond import Bond
 
-# preprocessor singleton
-# @singleton
+# preprocessor
 class Preprocessor:
     """
     Class to preprocess the data for the project.
     """
 
-    def __init__(self, data_dir:str = '../Data/', preprocessed_dir:str = 'Preprocessed/',
+    def __init__(self, data_dir:str = '../Data/', preprocessed_dir:str = 'Preprocess/Preprocessed/',
         futures_dir:str = 'Futures/', bonds_dir:str = 'Bonds/'):
         """
         Constructor for the Preprocessor class.
@@ -22,7 +21,6 @@ class Preprocessor:
         # create module level variables for the dates for Phase III and Phase IV
         self.__PHASE_III_START = datetime.datetime(2013, 1, 1)
         self.__PHASE_III_END = datetime.datetime(2021, 1, 1)
-        self.__PHASE_IV_START = datetime.datetime(2021, 1, 1)
         self.__PHASE_IV_END = datetime.datetime(2022, 10, 28)
 
         # create a module level variable for the directories
