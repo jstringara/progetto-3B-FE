@@ -55,6 +55,9 @@ class Preprocess:
         Load the data from the preprocessed directory.
         """
 
+        # get the dates
+        self.relevant_dates()
+
         # load the data
         self.preprocess_OIS_rates()
         self.preprocess_Volumes_front_Month('March')
