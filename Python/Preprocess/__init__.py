@@ -1,2 +1,2 @@
-from .preprocess import Preprocess
+from .preprocess import Preprocessor
 from .bond import Bond

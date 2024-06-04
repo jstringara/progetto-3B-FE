@@ -7,10 +7,10 @@ import pandas as pd
 if __name__ == '__main__':
     from bond import Bond
 else:
-    from Preprocess.bond import Bond
+    from preprocess.bond import Bond
 
 # preprocessor
-class Preprocess:
+class Preprocessor:
     """
     Class to preprocess the data for the project.
     """
@@ -19,7 +19,7 @@ class Preprocess:
 
     def __new__(cls):
         if cls.__instance is None:
-            cls.__instance = super(Preprocess, cls).__new__(cls)
+            cls.__instance = super(Preprocessor, cls).__new__(cls)
             cls.__instance.__initialized = False
         return cls.__instance
 
@@ -541,10 +541,10 @@ class Preprocess:
 
 if __name__ == '__main__':
 
-    preprocess = Preprocess()
+    preprocess = Preprocessor()
 
     # create a new instance of the class and check that it is the same as the previous one
-    preprocess2 = Preprocess()
+    preprocess2 = Preprocessor()
     print(preprocess is preprocess2)
 
     preprocess.save_data()

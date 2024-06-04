@@ -6,13 +6,11 @@
 # > venv\Scripts\activate
 # > python runProject.py
 
-import os
-import pandas as pd
-from Preprocess import Preprocess
-from Bootstrap import Bootstrap
+from preprocess import Preprocessor
+from bootstrap import Bootstrap
 
 # initialize the preprocessor and load the data
-preprocess = Preprocess()
+preprocessor = Preprocessor()
 
 # Perform the bootstrap
-
+bootstrapper = Bootstrap(preprocessor.preprocess_OIS_rates())
