@@ -12,11 +12,22 @@ class Preprocess:
     Class to preprocess the data for the project.
     """
 
+    __instance = None
+
+    def __new__(cls):
+        if cls.__instance is None:
+            cls.__instance = super(Preprocess, cls).__new__(cls)
+            cls.__instance.__initialized = False
+        return cls.__instance
+
     def __init__(self, data_dir:str = '../Data/', preprocessed_dir:str = 'Preprocess/Preprocessed/',
         futures_dir:str = 'Futures/', bonds_dir:str = 'Bonds/'):
         """
         Constructor for the Preprocessor class.
         """
+
+        if self.__initialized:
+            return
 
         # create module level variables for the dates for Phase III and Phase IV
         self.__PHASE_III_START = datetime.datetime(2013, 1, 1)
@@ -49,6 +60,8 @@ class Preprocess:
         
         # load all the data
         self.load_data()
+
+        self.__initialized = True
     
     def load_data(self)->None:
         """
@@ -526,5 +539,9 @@ class Preprocess:
 if __name__ == '__main__':
 
     preprocess = Preprocess()
+
+    # create a new instance of the class and check that it is the same as the previous one
+    preprocess2 = Preprocess()
+    print(preprocess is preprocess2)
 
     preprocess.save_data()
