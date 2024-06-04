@@ -1,4 +1,4 @@
-function ZSpreads = compute_ZSpread(Bond, dates, zrates)
+function ZSpreads = compute_ZSpread_Bond(Bond, dates, zrates)
 % compute_ZSpread computes the Z-Spread for a given bond
 %
 % INPUTS
@@ -26,8 +26,9 @@ for i=1:height(dates)
         zrates_coupons(coupon_dates < dates(i,2)) = 0;
         % compute the yearfractions
         EU_30_360 = 6;
+        ACT_365=3;
         yf_coupon = yearfrac([dates(i,1), coupon_dates(1:end-1)], coupon_dates, EU_30_360);
-        yf = yearfrac(dates(i,1), coupon_dates, EU_30_360);
+        yf = yearfrac(dates(i,1), coupon_dates, ACT_365);
         % any yeafraction is less than 0.01, set the Z-spread to 0
         % # TODO: sistemare la condizione. Il vecchio era se qualunque yf è minore di 0.01
         if max(yf) < 0.075

@@ -21,7 +21,6 @@ xlim([C_spread.Date(1) - calmonths(6), C_spread.Date(end) + calmonths(6)])
 % only keep date between the first recorded and october 2022
 % xlim([C_spread.Date(1) - calmonths(6), datetime(2022, 10, 31)])
 ylim([-0.7, 3.7])
-title('C-Spread')
 grid on
 
 legend('C-Spread', 'Z-Spread', 'Risk-Free Rate')
