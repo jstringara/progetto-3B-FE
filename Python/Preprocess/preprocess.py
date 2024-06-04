@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 # import the Bond class from the bond.py file
-from Preprocess.bond import Bond
+from bond import Bond
 
 # preprocessor
 class Preprocess:
@@ -36,7 +36,7 @@ class Preprocess:
 
         # create a module level variable for the directories
         self.__data_dir = '../Data/'
-        self.__preprocessed_dir = 'Preprocessed/'
+        self.__preprocessed_dir = os.path.join(os.path.dirname(__file__), 'Preprocessed/')
         self.__futures_dir = 'Futures/'
         self.__bonds_dir = 'Bonds/'
 
