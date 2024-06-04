@@ -7,7 +7,7 @@ import pandas as pd
 from bond import Bond
 
 # preprocessor
-class Preprocessor:
+class Preprocess:
     """
     Class to preprocess the data for the project.
     """
@@ -513,6 +513,6 @@ class Preprocessor:
 
 if __name__ == '__main__':
 
-    preprocessor = Preprocessor()
+    preprocess = Preprocess()
 
-    preprocessor.save_data()
+    preprocess.save_data()

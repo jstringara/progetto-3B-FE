@@ -9,8 +9,8 @@
 import os
 import pandas as pd
 
-data_dir = "Data/"
+# preprocess the data
+from preprocess import Preprocess
 
-# load the bootstrap data
-OIS_Data = pd.read_csv(os.path.join(data_dir, 'OIS_Data.csv'), parse_dates=['Date'])
-
+# initialize the preprocessor
+preprocessor = Preprocess()
