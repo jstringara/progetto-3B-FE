@@ -8,9 +8,7 @@
 
 import os
 import pandas as pd
-
-# preprocess the data
-from Preprocess.preprocess import Preprocess
+from Preprocess import Preprocess
 
 # initialize the preprocessor and load the data
 Preprocess()
