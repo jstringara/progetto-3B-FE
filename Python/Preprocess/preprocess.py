@@ -55,6 +55,9 @@ class Preprocess:
         Load the data from the preprocessed directory.
         """
 
+        # start time
+        start_time = datetime.datetime.now()
+
         # get the dates
         self.relevant_dates()
 
@@ -70,6 +73,12 @@ class Preprocess:
         self.preprocess_bonds()
         self.preprocess_open_interest()
         self.preprocess_extra_variables()
+
+        # end time
+        end_time = datetime.datetime.now()
+
+        # print the time taken in seconds
+        print(f'Time taken to load the data: {(end_time - start_time).total_seconds()} s')
 
     def relevant_dates(self):
         """
