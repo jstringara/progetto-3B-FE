@@ -9,8 +9,10 @@
 import os
 import pandas as pd
 from Preprocess import Preprocess
+from Bootstrap import Bootstrap
 
 # initialize the preprocessor and load the data
-Preprocess()
+preprocess = Preprocess()
 
-print(Preprocess() is Preprocess())
+# Perform the bootstrap
+
