@@ -102,6 +102,8 @@ class Bootstrap:
         df = pd.DataFrame(data=d) 
         # reorder the columns
         df = df[self.__OIS_data.columns]
+        # cast all the columns to float
+        df[self.__OIS_data.columns[1:]] = df[self.__OIS_data.columns[1:]].astype(float)
 
         return df
 
@@ -157,8 +159,9 @@ class Bootstrap:
 
         DF['Date'] = self.__OIS_data['Date'].values
 
-        # reorder the columns
+        # reorder the columns and cast them to float
         DF = DF[self.__OIS_data.columns]
+        DF[self.__OIS_data.columns[1:]] = DF[self.__OIS_data.columns[1:]].astype(float)
 
         return DF
 
@@ -181,6 +184,10 @@ class Bootstrap:
             self.__OIS_data.columns[1:]].values) / \
             self.__year_fractions[self.__OIS_data.columns[1:]].values
 
+        # reorder the columns and cast them to float
+        zero_rates = zero_rates[self.__OIS_data.columns]
+        zero_rates[self.__OIS_data.columns[1:]] = zero_rates[self.__OIS_data.columns[1:]].astype(float)
+
         return zero_rates
 
     def __bootstrap(self)->None:
@@ -202,4 +209,110 @@ class Bootstrap:
 
         # compute the zero rates
         self.__zero_rates = self.zero_rates()
+
+    def __pad_zero_rates(self, target_dates:pd.Series)->pd.DataFrame:
+        """
+        Pad the zero rates to match the dates
+        """
+
+        # check that the zero rates have been computed
+        if self.__zero_rates is None:
+            self.__zero_rates = self.zero_rates()
+
+        # pad the zero rates
+        zero_rates = pd.DataFrame()
+        zero_rates['Date'] = target_dates.values
+
+        # fill the zero rates we have
+        zero_rates = pd.merge(zero_rates, self.__zero_rates, on='Date', how='left')
+
+        # fill the zero rates we don't have
+        zero_rates = zero_rates.ffill()
+
+        return zero_rates
+
+    def __pad_yf(self, target_dates:pd.Series)->pd.DataFrame:
+        """
+        Pad the year fractions to match the dates
+        """
+
+        # check that the year fractions have been computed
+        if self.__year_fractions is None:
+            self.__year_fractions = self.year_fractions('ACT_365')
+
+        # pad the year fractions
+        yf = pd.DataFrame()
+        yf['Date'] = target_dates.values
+
+        # fill the year fractions we have
+        yf = pd.merge(yf, self.__year_fractions, on='Date', how='left')
+
+        # fill the year fractions we don't have
+        yf = yf.ffill()
+
+        return yf
+
+    def __pad_dates(self, target_dates:pd.Series)->pd.DataFrame:
+        """
+        Pad the dates to match the zero rates
+        """
+
+        # check that the dates have been computed
+        if self.__dates is None:
+            self.__dates = self.dates()
+
+        # pad the dates
+        dates = pd.DataFrame()
+        dates['Date'] = target_dates.values
+
+        # fill the dates we have
+        dates = pd.merge(dates, self.__dates, on='Date', how='left')
+
+        # fill the dates we don't have taking the same offset as the last date
+        for i, row in dates[dates.isnull().any(axis=1)].iterrows():
+            # get the previous date
+            prev_date = dates.loc[i - 1, 'Date']
+            # compute the offset
+            offset = row['Date'] - prev_date
+            # move all the previous dates by the offset
+            dates.iloc[i, 1:] = dates.iloc[i - 1, 1:].apply(lambda x: x + offset)
+
+        return dates
+
+    def interpolate(self, target_dates:pd.Series, target_expiries:pd.Series)->pd.DataFrame:
+        """
+        Interpolate the zero rates to match the dates and expiries
+        - target_dates: pandas Series with the target dates
+        - target_expiries: pandas Series with the target expiries
+        """
+
+        # check that target_dates and target_expiries have the same length
+        if len(target_dates) != len(target_expiries):
+            raise ValueError('target_dates and target_expiries must have the same length')
+
+        # check that the zero rates have been computed
+        if self.__zero_rates is None:
+            self.__zero_rates = self.zero_rates()
+
+        # pad the data to match the dates
+        dates = self.__pad_dates(target_dates)
+        yf = self.__pad_yf(target_dates)
+        zero_rates = self.__pad_zero_rates(target_dates)
+
+        # interpolate the zero rates by row to match the expiries
+        interpolated = pd.DataFrame()
+        interpolated['Date'] = target_dates.values
+        interpolated['Risk Free Rate'] = np.nan
+
+        for i, row in zero_rates.iterrows():
+            # get the expiry
+            yf_expiry = yearfrac(row['Date'], target_expiries.iloc[i], 'ACT_365')
+            # get the corresponding data points as numpy arrays of floats
+            xp = yf.iloc[i].values[1:].astype(float)
+            fp = row.values[1:].astype(float)
+            # interpolate the zero rates
+            interpolated.loc[i, 'Risk Free Rate'] = np.interp(
+                yf_expiry, xp, fp)
+        
+        return interpolated
 

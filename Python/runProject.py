@@ -14,3 +14,11 @@ preprocessor = Preprocessor()
 
 # Perform the bootstrap
 bootstrapper = Bootstrap(preprocessor.preprocess_OIS_rates())
+
+# get the Front
+Front = preprocessor.preprocess_December()
+
+# interpolate the zero rates on the Front dates
+risk_free_rate = bootstrapper.interpolate(Front['Date'], Front['Expiry'])
+
+print(risk_free_rate)
