@@ -13,6 +13,7 @@ from matplotlib import pyplot as plt
 # custom imports
 from preprocess import Preprocessor
 from bootstrap import Bootstrap
+from spreads import C_spread
 
 # define variables
 PHASE_III_END = datetime.datetime(2021, 1, 1)
@@ -31,6 +32,9 @@ Volumes_september = preprocessor.preprocess_Volumes_front_Month('September')
 Front = preprocessor.preprocess_December()
 Next = preprocessor.preprocess_December(years_offset=1)
 Next_2 = preprocessor.preprocess_December(years_offset=2)
+
+# get the daily prices
+Daily = preprocessor.preprocess_daily_price()
 
 # boxplot of the volumes for the different months
 # Volumes of March, June, September and December for PHASE III in log scale
@@ -64,12 +68,19 @@ plt.title('Boxplot of the volumes for front, next and next_2 December futures')
 plt.grid()
 plt.xlabel('Futures')
 plt.ylabel('Volume (log scale)')
+plt.show()
 
 # Perform the bootstrap
 bootstrapper = Bootstrap(preprocessor.preprocess_OIS_rates())
 
-
-
 # interpolate the zero rates on the Front dates
 front_rate = bootstrapper.interpolate(Front['Date'], Front['Expiry'])
 next_rate = bootstrapper.interpolate(Front['Date'], Next['Expiry'])
+
+# compute the C-spread
+C_spread = C_spread(Front, Next, Daily, bootstrapper)
+
+# compute the C-spread
+C_spread.compute()
+
+C_spread.plot_front_next()
