@@ -34,7 +34,10 @@ class Bootstrap:
         self.__discount_factors = None
         self.__zero_rates = None
 
+        t0 = datetime.datetime.now()
         self.__bootstrap()
+        t1 = datetime.datetime.now()
+        print(f'Time taken to bootstrap the data: {(t1 - t0).total_seconds()} s')
     
     def __to_timedelta(self, offset_str:str)->datetime.timedelta:
         """
@@ -205,19 +208,34 @@ class Bootstrap:
         """
 
         # compute the dates
+        t0 = datetime.datetime.now()
         self.__dates = self.dates()
+        t1 = datetime.datetime.now()
+        print(f'Time taken to compute the dates: {(t1 - t0).total_seconds()} s')
 
         # compute the year fractions with EU_30_360 convention
+        t0 = datetime.datetime.now()
         self.__yf_30_360 = self.year_fractions('EU_30_360')
+        t1 = datetime.datetime.now()
+        print(f'Time taken to compute the year fractions: {(t1 - t0).total_seconds()} s')
 
         # compute the Discount Factors
+        t0 = datetime.datetime.now()
         self.__discount_factors = self.discount_factors()
+        t1 = datetime.datetime.now()
+        print(f'Time taken to compute the discount factors: {(t1 - t0).total_seconds()} s')
 
         # save the year fractions
+        t0 = datetime.datetime.now()
         self.__year_fractions = self.year_fractions('ACT_365')
+        t1 = datetime.datetime.now()
+        print(f'Time taken to compute the year fractions: {(t1 - t0).total_seconds()} s')
 
         # compute the zero rates
+        t0 = datetime.datetime.now()
         self.__zero_rates = self.zero_rates()
+        t1 = datetime.datetime.now()
+        print(f'Time taken to compute the zero rates: {(t1 - t0).total_seconds()} s')
 
     def __pad_zero_rates(self, target_dates:pd.Series)->pd.DataFrame:
         """
