@@ -177,4 +177,10 @@ class C_spread:
         plt.xlabel('Date')
         plt.ylabel('C-spread')
         plt.show()
+    
+    def save_aggregated(self, method='constant'):
+        """
+        Save the aggregated C-spread
+        """
+        self.__C_spread.to_csv(f'C-spread_{method}.csv', index=False)
         
