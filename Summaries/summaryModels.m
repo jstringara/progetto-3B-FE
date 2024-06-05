@@ -16,6 +16,9 @@ T = composeTable(T, 'Model IV', mdl_IV, rows);
 T = composeTable(T, 'Model V', mdl_V, rows);
 T = composeTable(T, 'Model VI', mdl_VI, rows);
 
+% escape the row names so that '_' is not interpreted as a subscript
+T.Properties.RowNames = strrep(T.Properties.RowNames, '_', '\_');
+
 disp(T)
 
 % save to a csv file
