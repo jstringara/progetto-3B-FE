@@ -212,7 +212,7 @@ mdl_V = fitlm(Y_phase_III, 'Delta_C ~ WTI + SPX + VIX + Volatility');
 
 %% Results table of all the 6 models
 
-summaryModels(mdl_I, mdl_II, mdl_III, mdl_IV, mdl_V, mdl_VI, true);
+summaryModels(mdl_I, mdl_II, mdl_III, mdl_IV, mdl_V, mdl_VI, true, 'Results/RegressionResults.csv')
 
 %% EWMA model
 
@@ -242,15 +242,15 @@ v_ewma_phase_III = v_ewma(Daily_Future.Date < phase_III_dates(2));
 Y_phase_III = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phase_III, ...
     Extra_Variables, v_ewma, phase_III_dates(2));
 
-mdl = fitlm(Y_phase_III, ...
+mdl_ewma = fitlm(Y_phase_III, ...
     'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + WTI + SPX + VIX + Volatility' ...
 );
 
-disp(mdl)
+disp(mdl_ewma)
 
 % get the AIC and BIC
-AIC = mdl.ModelCriterion.AIC;
-BIC = mdl.ModelCriterion.BIC;
+AIC= mdl_ewma.ModelCriterion.AIC;
+BIC= mdl_ewma.ModelCriterion.BIC;
 
 disp(['The AIC of the model with EWMA is: ', num2str(AIC)]);
 disp(['The BIC of the model with EWMA is: ', num2str(BIC)]);
@@ -266,15 +266,15 @@ ect_phase_IV = computeECT(C_spread, Z_spread, risk_free_rate, false, false);
 Y_phase_IV = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phase_IV, ...
     Extra_Variables, v_garch, phase_IV_dates(2));
 
-mdl = fitlm(Y_phase_IV, ...
+mdl_phase_IV = fitlm(Y_phase_IV, ...
     'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + WTI + SPX + VIX + Volatility' ...
 );
 
-disp(mdl)
+disp(mdl_phase_IV)
 
 % get the AIC and BIC
-AIC = mdl.ModelCriterion.AIC;
-BIC = mdl.ModelCriterion.BIC;
+AIC = mdl_phase_IV.ModelCriterion.AIC;
+BIC = mdl_phase_IV.ModelCriterion.BIC;
 
 disp(['The AIC of the model for phase IV is: ', num2str(AIC)]);
 disp(['The BIC of the model for phase IV is: ', num2str(BIC)]);
@@ -290,15 +290,15 @@ ect_phase_III = computeECT(C_spread, Z_spread, risk_free_rate, false, false);
 Y_phase_III = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phase_III, ...
     Extra_Variables, v_garch, phase_III_dates(2));
 
-mdl = fitlm(Y_phase_III, ...
+mdl_OI = fitlm(Y_phase_III, ...
     'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + WTI + SPX + VIX + Volatility' ...
 );
 
-disp(mdl)
+disp(mdl_OI)
 
 % get the AIC and BIC
-AIC = mdl.ModelCriterion.AIC;
-BIC = mdl.ModelCriterion.BIC;
+AIC = mdl_OI.ModelCriterion.AIC;
+BIC = mdl_OI.ModelCriterion.BIC;
 
 disp(['The AIC of the model for phase IV is: ', num2str(AIC)]);
 disp(['The BIC of the model for phase IV is: ', num2str(BIC)]);
@@ -314,15 +314,15 @@ ect_phase_III = computeECT(C_spread, Z_spread, risk_free_rate, false, false);
 Y_phase_III = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phase_III, ...
     Extra_Variables, v_garch, phase_III_dates(2));
 
-mdl = fitlm(Y_phase_III, ...
+mdl_month = fitlm(Y_phase_III, ...
     'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + WTI + SPX + VIX + Volatility' ...
 );
 
-disp(mdl)
+disp(mdl_month)
 
 % get the AIC and BIC
-AIC = mdl.ModelCriterion.AIC;
-BIC = mdl.ModelCriterion.BIC;
+AIC = mdl_month.ModelCriterion.AIC;
+BIC = mdl_month.ModelCriterion.BIC;
 
 disp(['The AIC of the model for phase IV is: ', num2str(AIC)]);
 disp(['The BIC of the model for phase IV is: ', num2str(BIC)]);
@@ -338,18 +338,22 @@ ect_phase_III = computeECT(C_spread, Z_spread, risk_free_rate, false, false);
 Y_phase_III = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phase_III, ...
     Extra_Variables, v_garch, phase_III_dates(2));
 
-mdl = fitlm(Y_phase_III, ...
+mdl_week = fitlm(Y_phase_III, ...
     'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + WTI + SPX + VIX + Volatility' ...
 );
 
-disp(mdl)
+disp(mdl_week)
 
 % get the AIC and BIC
-AIC = mdl.ModelCriterion.AIC;
-BIC = mdl.ModelCriterion.BIC;
+AIC = mdl_week.ModelCriterion.AIC;
+BIC = mdl_week.ModelCriterion.BIC;
 
 disp(['The AIC of the model for phase IV is: ', num2str(AIC)]);
 disp(['The BIC of the model for phase IV is: ', num2str(BIC)]);
+
+%% summary table of the robustness checks models
+
+summaryModels(mdl_ewma, mdl_phase_IV, mdl_OI, mdl_month, mdl_week, mdl_VI, true, 'Results/RobustnessResults.csv')
 
 %% Point 10) Quantile regression
 

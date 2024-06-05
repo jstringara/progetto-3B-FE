@@ -1,4 +1,4 @@
-function T = summaryModels(mdl_I, mdl_II, mdl_III, mdl_IV, mdl_V, mdl_VI, save_file)
+function T = summaryModels(mdl_I, mdl_II, mdl_III, mdl_IV, mdl_V, mdl_VI, save_file, file_name)
 % create the table
 Models = ["Model I"; "Model II"; "Model III"; "Model IV"; "Model V"; "Model VI"];
 % a row for each regression coefficient of model VI, Obs, BIC and AIC
@@ -23,7 +23,7 @@ disp(T)
 
 % save to a csv file
 if save_file
-    writetable(T, 'Results/RegressionResults.csv', 'WriteRowNames', true)
+    writetable(T, file_name, 'WriteRowNames', true)
 end
 
 end
