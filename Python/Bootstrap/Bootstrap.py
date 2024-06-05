@@ -1,8 +1,17 @@
+import os
+import sys
 import datetime
 from dateutil import relativedelta
-from yearfracion import yearfrac
 import numpy as np
 import pandas as pd
+
+# custom import (add parent directory to the path)
+if __name__ == '__main__':
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir = os.path.dirname(current_dir)
+    sys.path.insert(0, parent_dir)
+
+from yearfracion import yearfrac
 
 class Bootstrap:
     """
@@ -316,3 +325,28 @@ class Bootstrap:
         
         return interpolated
 
+# Testing
+if __name__ == '__main__':
+
+    from preprocess import Preprocessor
+
+    # initialize the preprocessor and load the data
+    preprocessor = Preprocessor()
+
+    # Perform the bootstrap
+    bootstrapper = Bootstrap(preprocessor.preprocess_OIS_rates())
+
+    # December futures
+    Front = preprocessor.preprocess_December()
+    Next = preprocessor.preprocess_December(years_offset=1)
+
+    # interpolate the zero rates on the Front dates
+    rate_front = bootstrapper.interpolate(Front['Date'], Front['Expiry'])
+    rate_next = bootstrapper.interpolate(Next['Date'], Next['Expiry'])
+
+    # save the interpolated rates inside of this directory
+    cur_dir = os.path.dirname(os.path.realpath(__file__))
+    rate_front.to_csv(os.path.join(cur_dir, 'rate_front.csv'), index=False)
+    rate_next.to_csv(os.path.join(cur_dir, 'rate_next.csv'), index=False)
+
+    print('Bootstraping done!')
