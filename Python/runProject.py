@@ -73,10 +73,6 @@ plt.show()
 # Perform the bootstrap
 bootstrapper = Bootstrap(preprocessor.preprocess_OIS_rates())
 
-# interpolate the zero rates on the Front dates
-front_rate = bootstrapper.interpolate(Front['Date'], Front['Expiry'])
-next_rate = bootstrapper.interpolate(Front['Date'], Next['Expiry'])
-
 # compute the C-spread
 C_spread = C_spread(Front, Next, Daily, bootstrapper)
 
@@ -84,3 +80,5 @@ C_spread = C_spread(Front, Next, Daily, bootstrapper)
 C_spread.compute()
 
 C_spread.plot_front_next()
+
+
