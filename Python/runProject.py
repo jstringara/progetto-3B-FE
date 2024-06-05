@@ -36,6 +36,9 @@ Next_2 = preprocessor.preprocess_December(years_offset=2)
 # get the daily prices
 Daily = preprocessor.preprocess_daily_price()
 
+# get the open interest
+Open_Interest = preprocessor.preprocess_open_interest()
+
 # boxplot of the volumes for the different months
 # Volumes of March, June, September and December for PHASE III in log scale
 plt.boxplot(
@@ -74,11 +77,15 @@ plt.show()
 bootstrapper = Bootstrap(preprocessor.preprocess_OIS_rates())
 
 # compute the C-spread
-C_spread = C_spread(Front, Next, Daily, bootstrapper)
+C_spread = C_spread(Front, Next, Daily, bootstrapper, Open_Interest)
 
 # compute the C-spread
 C_spread.compute()
 
 C_spread.plot_front_next()
 
+# aggregate the C-spread with the 'constant' rollover rule
+C_spread.aggregate('constant')
 
+# plot the aggregated C-spread
+C_spread.plot_aggregated()
