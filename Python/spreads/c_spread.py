@@ -1,3 +1,4 @@
+import datetime
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -51,8 +52,8 @@ class C_spread:
         plt.title('C-spread for the front and next futures')
         plt.grid()
         # set the y-axis limits
-        plt.ylim([-0.6, 3.6])
-        plt.xlim([self.__Front['Date'].values[0], self.__Front['Date'].values[-1]])
+        plt.ylim([-1, 5])
+        plt.xlim([self.__Front['Date'].values[0], datetime.datetime(2021, 12, 31)])
         plt.xlabel('Date')
         plt.ylabel('C-spread')
         plt.legend()
