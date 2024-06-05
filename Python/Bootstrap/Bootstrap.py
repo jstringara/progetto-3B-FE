@@ -312,6 +312,7 @@ class Bootstrap:
         interpolated = pd.DataFrame()
         interpolated['Date'] = target_dates.values
         interpolated['Risk Free Rate'] = np.nan
+        interpolated['Year Fraction'] = np.nan
 
         for i, row in zero_rates.iterrows():
             # get the expiry
@@ -322,6 +323,8 @@ class Bootstrap:
             # interpolate the zero rates
             interpolated.loc[i, 'Risk Free Rate'] = np.interp(
                 yf_expiry, xp, fp)
+            # save the year fraction
+            interpolated.loc[i, 'Year Fraction'] = yf_expiry
         
         return interpolated
 
