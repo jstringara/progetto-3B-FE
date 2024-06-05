@@ -44,16 +44,25 @@ class C_spread:
             'C-spread': C_spread_next
         })
 
-    def plot_front_next(self):
+    def plot_front_next(self, last_date=datetime.datetime(2021, 12, 31)):
+
+        # filter the data
+        Front = self.__C_spread_front[self.__C_spread_front['Date'] < last_date]
+        Next = self.__C_spread_next[self.__C_spread_next['Date'] < last_date]
 
         # plot the C-spread for the front and next futures
-        plt.plot(self.__C_spread_front['Date'], 100 * self.__C_spread_front['C-spread'], label='Front')
-        plt.plot(self.__C_spread_next['Date'], 100 * self.__C_spread_next['C-spread'], label='Next')
+        plt.plot(Front['Date'], 100 * Front['C-spread'], label='Front')
+        plt.plot(Next['Date'], 100 * Next['C-spread'], label='Next')
         plt.title('C-spread for the front and next futures')
         plt.grid()
         # set the y-axis limits
         plt.ylim([-1, 5])
-        plt.xlim([self.__Front['Date'].values[0], datetime.datetime(2021, 12, 31)])
+        # limit the dates to the ones plotted and add 6 months of padding to both sides
+        print(Front['Date'].dtype)
+        plt.xlim([
+            Front['Date'].values[0] - np.timedelta64(180, 'D'),
+            Front['Date'].values[-1] + np.timedelta64(180, 'D')
+        ])
         plt.xlabel('Date')
         plt.ylabel('C-spread')
         plt.legend()
