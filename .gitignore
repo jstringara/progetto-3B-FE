@@ -167,3 +167,8 @@ cython_debug/
 *.pdf
 *.txt
 .DS_Store
+
+# ignore the testing stuff
+
+Python/preprocess/Preprocessed/
+Python/bootstrap/*.csv
