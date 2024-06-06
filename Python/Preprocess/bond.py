@@ -50,6 +50,9 @@ class Bond:
         # if no data was found, add it to the list of unfound bonds
         if self.__data.empty:
             self.__unfound_info.append(self)
+
+        # initialize the z-spread
+        self.__z_spread = None
     
     @classmethod
     def get_unfound_info(cls):
@@ -192,6 +195,12 @@ class Bond:
         """
         return self.__code
 
+    def issuer(self)->str:
+        """
+        Return the issuer of the bond.
+        """
+        return self.__issuer
+
     def show_data(self)->None:
         """
         Show the data of the bond.
@@ -241,6 +250,10 @@ class Bond:
         - bootstrapper: Bootstrapper object with the OIS rates.
         """
 
+        # if already computed, return
+        if self.__z_spread is not None:
+            return self.__z_spread
+
         z_spread = pd.DataFrame()
         z_spread['Date'] = self.__data['Date']
 
@@ -278,9 +291,6 @@ class Bond:
                 prev_z = z_spread[z_spread['Date'] < target_date].iloc[-1, 1]
             except IndexError: # catch in case we have to start from the first date
                 prev_z = 0.0
-            print(prev_z)
-
-            print(cash_flows['Cash Flow'])
 
             # find the z-spread that makes the price equal to the bond price
             z = root_scalar(lambda z:
@@ -291,8 +301,14 @@ class Bond:
             ).root
 
             z_spread.loc[z_spread['Date'] == target_date, self.__code] = z
-        
-        return z_spread
 
+        # rename the column
+        z_spread = z_spread.rename(columns={self.__code: 'Z-spread'})
+        # add the volume
+        z_spread['Volume'] = self.__volume * (z_spread['Z-spread'] != 0).astype(int)
         
+        # save the z-spread
+        self.__z_spread = z_spread
+
+        return z_spread
     
