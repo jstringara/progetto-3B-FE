@@ -106,7 +106,7 @@ class Preprocessor:
             Daily_Price = self.preprocess_daily_price()
             Front = self.preprocess_December()
             common_dates = set(Daily_Price['Date']).intersection(set(Front['Date']))
-            self.__dates = pd.Series(list(common_dates))
+            self.__dates = pd.Series(list(common_dates), index=range(len(common_dates)))
         return self.__dates
 
     def preprocess_Volumes_front_Month(self, month:str, first_date:datetime.datetime = None, 
@@ -171,6 +171,9 @@ class Preprocessor:
 
         # save the data inside the object
         self.__data['Volumes_' + month] = Volumes
+
+        # reindex the data
+        Volumes = Volumes.reset_index(drop=True)
 
         return Volumes
 
@@ -284,6 +287,9 @@ class Preprocessor:
         # save the data inside the object
         self.__data[name] = front_Dec
 
+        # reindex the data
+        front_Dec = front_Dec.reset_index(drop=True)
+
         return front_Dec
 
     def preprocess_daily_price(self, first_date:datetime.datetime = None,
@@ -322,6 +328,9 @@ class Preprocessor:
 
         # save the data inside the object
         self.__data['Daily_Price'] = daily_price
+
+        # reindex the data
+        daily_price = daily_price.reset_index(drop=True)
 
         return daily_price
 
@@ -456,6 +465,9 @@ class Preprocessor:
         # save the data inside the object
         self.__data['Open_Interest'] = df
 
+        # reindex the data
+        df = df.reset_index(drop=True)
+
         return df
 
     def preprocess_extra_variables(self)->pd.DataFrame:
@@ -484,6 +496,9 @@ class Preprocessor:
 
         # save the data inside the object
         self.__data['Extra_Variables'] = extra_variables
+
+        # reindex the data
+        extra_variables = extra_variables.reset_index(drop=True)
 
         return extra_variables
 
@@ -526,6 +541,9 @@ class Preprocessor:
         
         # save the data inside the object
         self.__data['OIS_Data'] = OIS_rates
+
+        # reindex the data
+        OIS_rates = OIS_rates.reset_index(drop=True)
 
         return OIS_rates
     
