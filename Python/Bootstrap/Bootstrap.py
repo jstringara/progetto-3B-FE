@@ -30,7 +30,7 @@ class Bootstrap:
         # structures to hold the computed values
         self.__dates = None
         self.__yf_30_360 = None
-        self.__year_fractions = None
+        self.__yf_365 = None
         self.__discount_factors = None
         self.__zero_rates = None
 
@@ -129,10 +129,9 @@ class Bootstrap:
 
         # check that the year fractions have been computed
         if self.__yf_30_360 is None:
-            self.__yf_30_360 = self.compute_year_fractions('EU_30_360')
+            self.__yf_30_360 = self.year_fractions('EU_30_360')
 
-        DF = pd.DataFrame(columns = self.__OIS_data.columns[1:], 
-            index = range(len(self.__OIS_data)))
+        DF = pd.DataFrame()
 
         # for dates less than one year, compute directly
         under_one_year_cols = ['EUREON1W', 'EUREON2W', 'EUREON3W', 'EUREON1M', 'EUREON2M',
@@ -188,13 +187,17 @@ class Bootstrap:
         # check that the discount factors have been computed
         if self.__discount_factors is None:
             self.__discount_factors = self.discount_factors()
+
+        # check that the year fractions have been computed
+        if self.__yf_365 is None:
+            self.__yf_365 = self.year_fractions('ACT_365')
         
         # compute the zero rates
-        zero_rates = pd.DataFrame(columns = self.__OIS_data.columns)
-        zero_rates['Date'] = self.__OIS_data['Date']
+        zero_rates = pd.DataFrame()
+        zero_rates['Date'] = self.__OIS_data['Date'].values
         zero_rates[self.__OIS_data.columns[1:]] = - np.log(self.__discount_factors[
             self.__OIS_data.columns[1:]].values) / \
-            self.__year_fractions[self.__OIS_data.columns[1:]].values
+            self.__yf_365[self.__OIS_data.columns[1:]].values
 
         # reorder the columns and cast them to float
         zero_rates = zero_rates[self.__OIS_data.columns]
@@ -252,7 +255,7 @@ class Bootstrap:
 
         # fill the zero rates we have
         zero_rates = pd.merge(zero_rates, self.__zero_rates, on='Date', how='left')
-
+        
         # fill the zero rates we don't have
         zero_rates = zero_rates.ffill()
 
@@ -264,15 +267,15 @@ class Bootstrap:
         """
 
         # check that the year fractions have been computed
-        if self.__year_fractions is None:
-            self.__year_fractions = self.year_fractions('ACT_365')
+        if self.__yf_365 is None:
+            self.__yf_365 = self.year_fractions('ACT_365')
 
         # pad the year fractions
         yf = pd.DataFrame()
         yf['Date'] = target_dates.values
 
         # fill the year fractions we have
-        yf = pd.merge(yf, self.__year_fractions, on='Date', how='left')
+        yf = pd.merge(yf, self.__yf_365, on='Date', how='left')
 
         # fill the year fractions we don't have
         yf = yf.ffill()
@@ -316,10 +319,6 @@ class Bootstrap:
         # check that target_dates and target_expiries have the same length
         if len(target_dates) != len(target_expiries):
             raise ValueError('target_dates and target_expiries must have the same length')
-
-        # check that the zero rates have been computed
-        if self.__zero_rates is None:
-            self.__zero_rates = self.zero_rates()
 
         # pad the data to match the dates
         dates = self.__pad_dates(target_dates)
