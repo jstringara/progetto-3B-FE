@@ -198,6 +198,12 @@ class Bond:
         """
         return self.__issuer
 
+    def dates(self)->pd.Series:
+        """
+        Return the dates of the bond.
+        """
+        return self.__data['Date']
+
     def show_data(self)->None:
         """
         Show the data of the bond.
@@ -212,7 +218,12 @@ class Bond:
         Output:
         - DataFrame with the filtered data.
         """
+
+        # filter the data
         self.__data = self.__data.loc[self.__data['Date'].isin(dates)]
+
+        # reindex the data
+        self.__data = self.__data.reset_index(drop=True)
 
     def __compute_cash_flows(self, target_date:datetime.date)->pd.DataFrame:
         """
