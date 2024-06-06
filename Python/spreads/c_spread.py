@@ -102,16 +102,15 @@ class C_spread:
                 df = Open_Interest[Open_Interest['Next'] > Open_Interest['Front']]
 
                 # get the switch date
-                if df.empty:
-                    switch_date = Front['Date'].values[-1]
+                if df.empty: # no date is found, just use the Front
+                    C_spread = pd.concat([C_spread, Front])
                 else:
                     switch_date = df['Date'].values[0]
-                # get the front up to the date when the open interest of the next future is higher
-                C_spread = pd.concat([
-                    C_spread,
-                    Front[Front['Date'] < switch_date],
-                    Next[Next['Date'] >= switch_date]
-                ])
+                    C_spread = pd.concat([
+                        C_spread,
+                        Front[Front['Date'] < switch_date],
+                        Next[Next['Date'] >= switch_date]
+                    ])
             elif rollover_rule == 'month':
                 # get the front up to one month before the expiry
                 C_spread = pd.concat([
