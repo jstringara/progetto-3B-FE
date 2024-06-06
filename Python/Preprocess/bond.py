@@ -1,6 +1,11 @@
 import os
 import datetime
+import scipy.optimize as opt
+import numpy as np
 import pandas as pd
+
+# custom imports
+from yearfracion import yearfrac
 
 # Bond class
 class Bond:
@@ -133,6 +138,9 @@ class Bond:
         except ValueError as e:
             # put it into the list of unfound bonds
             self.__unfound_info.append(self)
+        
+        # reindex the data
+        out_df = out_df.reset_index(drop=True)
 
         return out_df
 
@@ -178,6 +186,12 @@ class Bond:
 
         return coupon_dates
 
+    def code(self)->str:
+        """
+        Return the code of the bond.
+        """
+        return self.__code
+
     def show_data(self)->None:
         """
         Show the data of the bond.
@@ -193,3 +207,84 @@ class Bond:
         - DataFrame with the filtered data.
         """
         self.__data = self.__data.loc[self.__data['Date'].isin(dates)]
+
+    def __compute_cash_flows(self, target_date:datetime.date)->pd.DataFrame:
+        """
+        Compute the cash flows of the bond at the target date.
+        """
+
+        # filter the coupon dates, only keep ones after the target date
+        coupon_dates = [
+            date
+            for date in self.__coupon_dates
+            if date >= target_date
+        ]
+
+        # compute the cash flows
+        cash_flows = [
+            self.__coupon_rate
+            for date in coupon_dates
+        ]
+
+        # add the principal
+        cash_flows[-1] += 100
+
+        return pd.DataFrame({
+            'Date': coupon_dates,
+            'Cash Flow': cash_flows
+        })
+
+    def z_spread(self, bootstrapper)->pd.DataFrame:
+        """
+        Compute the Z-spread of the bond.
+        Input:
+        - bootstrapper: Bootstrapper object with the OIS rates.
+        """
+
+        z_spread = pd.DataFrame()
+        z_spread['Date'] = self.__data['Date']
+
+        # wherever we don't have data, we put 0 (float)
+        z_spread[self.__code] = 0.0
+
+        # pad the zero rates. HACK this relies on pseudo-private method
+        yf = bootstrapper._Bootstrap__pad_yf(self.__data['Date'])
+        zero_rates = bootstrapper._Bootstrap__pad_zero_rates(self.__data['Date'])
+
+        # iterate over the data
+        for i, row in self.__data.dropna().iterrows():
+
+            target_date = row['Date']
+
+            # compute the cash flows
+            cash_flows = self.__compute_cash_flows(target_date)
+
+            # compute the dates
+            x = yearfrac(target_date, cash_flows['Date'], 'ACT_365').values.astype(float)
+
+            # check that the max be less than 0.0075
+            if np.max(x) < 0.075:
+                continue
+
+            # get the zero rates for the date
+            xp = yf[yf['Date'] == target_date].iloc[0, 1:].values.astype(float)
+            fp = zero_rates[zero_rates['Date'] == target_date].iloc[0, 1:].values.astype(float)
+
+            # interpolate the zero rates
+            f = np.interp(x, xp, fp)
+
+            # find the z-spread that makes the price equal to the bond price
+            z = opt.newton(
+                lambda z: np.abs(
+                    np.sum(cash_flows['Cash Flow'].values * np.exp(-z * x) * np.exp(-f * x)) 
+                    -
+                    row[self.__code]
+                ), 0
+            )
+
+            z_spread.loc[z_spread['Date'] == target_date, self.__code] = z
+        
+        return z_spread
+
+        
+    
