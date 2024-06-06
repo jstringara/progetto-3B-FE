@@ -1,5 +1,6 @@
 import os
 import datetime
+from dateutil.relativedelta import relativedelta
 from scipy.optimize import root_scalar
 import numpy as np
 import pandas as pd
@@ -166,21 +167,17 @@ class Bond:
         if pd.isnull(self.__first_quote):
             return []
 
-        # compute the time difference (expressed in months) between the first quote and the maturity date
-        time_diff = self.__maturity_date.to_period('M') - self.__first_quote.to_period('M')
-        time_diff = time_diff.n
-
         # find the time difference between coupons (in months)
-        coupon_time_diff = 12 // self.__coupon_frequency
-
-        # compute the number of coupons that are paid over the life of the bond
-        num_coupons = time_diff // coupon_time_diff
+        time_step = relativedelta(months = 12 // int(self.__coupon_frequency))
 
         # compute the coupon dates
-        coupon_dates = [
-            self.__maturity_date - pd.DateOffset(months=coupon_time_diff * i)
-            for i in reversed(range(num_coupons+1))
-        ]
+        coupon_dates = []
+        i = 0
+        while self.__maturity_date - i * time_step > self.__first_quote:
+            coupon_dates.append(self.__maturity_date - i * time_step)
+            i += 1
+
+        # sort the coupon dates
         coupon_dates.sort()
 
         # if there are no coupon dates, add the maturity date
