@@ -1,6 +1,6 @@
 import os
 import datetime
-import scipy.optimize as opt
+from scipy.optimize import root_scalar
 import numpy as np
 import pandas as pd
 
@@ -214,7 +214,7 @@ class Bond:
         """
 
         # filter the coupon dates, only keep ones after the target date
-        coupon_dates = [
+        coupon_dates = [target_date] + [
             date
             for date in self.__coupon_dates
             if date >= target_date
@@ -222,15 +222,15 @@ class Bond:
 
         # compute the cash flows
         cash_flows = [
-            self.__coupon_rate
-            for date in coupon_dates
+            self.__coupon_rate * yearfrac(date, coupon_dates[i+1], 'EU_30_360')
+            for i, date in enumerate(coupon_dates[:-1])
         ]
 
         # add the principal
         cash_flows[-1] += 100
 
         return pd.DataFrame({
-            'Date': coupon_dates,
+            'Date': coupon_dates[1:],
             'Cash Flow': cash_flows
         })
 
@@ -273,14 +273,22 @@ class Bond:
             # interpolate the zero rates
             f = np.interp(x, xp, fp)
 
+            # find the previous value of the z-spread
+            try:
+                prev_z = z_spread[z_spread['Date'] < target_date].iloc[-1, 1]
+            except IndexError: # catch in case we have to start from the first date
+                prev_z = 0.0
+            print(prev_z)
+
+            print(cash_flows['Cash Flow'])
+
             # find the z-spread that makes the price equal to the bond price
-            z = opt.newton(
-                lambda z: np.abs(
-                    np.sum(cash_flows['Cash Flow'].values * np.exp(-z * x) * np.exp(-f * x)) 
-                    -
-                    row[self.__code]
-                ), 0
-            )
+            z = root_scalar(lambda z:
+                np.sum(cash_flows['Cash Flow'].values * np.exp( (-z -f) * x)) 
+                -
+                row[self.__code],
+                x0 = prev_z, x1 = prev_z + 0.01, method='secant'
+            ).root
 
             z_spread.loc[z_spread['Date'] == target_date, self.__code] = z
         
