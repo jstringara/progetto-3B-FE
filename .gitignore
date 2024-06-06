@@ -172,3 +172,4 @@ cython_debug/
 
 Python/preprocess/Preprocessed/
 Python/bootstrap/*.csv
+Python/*.csv
