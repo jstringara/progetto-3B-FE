@@ -30,6 +30,24 @@ class C_spread:
         self.__C_spread_next = None
         self.__C_spread = None
 
+    def c_spread_front(self):
+        """
+        Return the C-spread for the front futures
+        """
+        return self.__C_spread_front
+
+    def c_spread_next(self):
+        """
+        Return the C-spread for the next futures
+        """
+        return self.__C_spread_next
+    
+    def c_spread(self):
+        """
+        Return the aggregated C-spread
+        """
+        return self.__C_spread
+
     def compute(self):
 
         # interpolate the zero rates on the Front dates
