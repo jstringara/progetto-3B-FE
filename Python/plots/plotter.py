@@ -1,7 +1,7 @@
 import datetime
 import numpy as np
 import pandas as pd
-from spreads import C_spread
+from spreads import C_spread, Z_spread
 import matplotlib.pyplot as plt
 
 class Plotter:
@@ -150,3 +150,45 @@ class Plotter:
         # save the plot as a .png file
         if save:
             plt.savefig('plot_C_spread.png')
+
+    def plot_C_Z_R(self, C_spread:C_spread, Z_spread:Z_spread, R:pd.DataFrame,
+        end_date:datetime.datetime=None, save:bool=True)->None:
+        """
+        Plot the C-spread, Z-spread and risk-free rate up to the end date.
+        If the end date is not provided, use the end of Phase III.
+        If save is True, save the plot as a .png file.
+        """
+
+        if end_date is None:
+            end_date = self.__PHASE_III_END
+        
+        # get the data
+        C = C_spread.c_spread()
+        Z = Z_spread.z_spread()
+
+        # filter the data
+        C = C[C['Date'] < end_date]
+        Z = Z[Z['Date'] < end_date]
+        R = R[R['Date'] < end_date]
+
+        # plot the C-spread, Z-spread and risk-free rate
+        plt.plot(C['Date'], 100 * C['C-spread'], label='C-spread')
+        plt.plot(Z['Date'], 100 * Z['Z-spread'], label='Z-spread')
+        plt.plot(R['Date'], 100 * R['Risk Free Rate'], label='Risk-free rate')
+        plt.title('C-spread, Z-spread and risk-free rate')
+        plt.grid()
+        # set the y-axis limits
+        plt.ylim([-0.5, 3.6])
+        # limit the dates to the ones plotted and add 6 months of padding to both sides
+        plt.xlim([
+            C['Date'].values[0] - np.timedelta64(180, 'D'),
+            C['Date'].values[-1] + np.timedelta64(180, 'D')
+        ])
+        plt.xlabel('Date')
+        plt.ylabel('Rate (%)')
+        plt.legend()
+        plt.show()
+
+        # save the plot as a .png file
+        if save:
+            plt.savefig('plot_C_Z_R.png')
