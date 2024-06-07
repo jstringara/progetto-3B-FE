@@ -8,6 +8,7 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
+from arch.unitroot import DFGLS
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 # custom imports
@@ -86,4 +87,29 @@ R = OIS_rates[['Date', 'EUREON3M']]
 R.columns = ['Date', 'Risk Free Rate']
 
 # plot the ACF and PACF of the three spreads
-plotter.plot_ACF_PACF(c_spread, z_spread, R)
+# plotter.plot_ACF_PACF(c_spread, z_spread, R)
+
+# perform the ADF GLS test on the C-spread
+test_C = DFGLS(c_spread.c_spread()['C-spread'])
+print('\n --- C-Spread --- \n')
+print(test_C.summary())
+
+# perform the ADF GLS test on the C-spread differences
+test_C_diff = DFGLS(c_spread.c_spread()['C-spread'].diff().dropna())
+print('\n --- First Difference of the C-Spread --- \n')
+print(test_C_diff.summary())
+
+# perform the ADF GLS test on the Z-spread
+test_Z = DFGLS(z_spread.z_spread()['Z-spread'])
+print('\n --- Z-Spread --- \n')
+print(test_Z.summary())
+
+# perform the ADF GLS test on the Z-spread differences
+test_Z_diff = DFGLS(z_spread.z_spread()['Z-spread'].diff().dropna())
+print('\n --- First Difference of the Z-Spread --- \n')
+print(test_Z_diff.summary())
+
+# perform the ADF GLS test on the Risk-Free Rate
+test_R = DFGLS(R['Risk Free Rate'])
+print('\n --- Risk-Free Rate --- \n')
+print(test_R.summary())
