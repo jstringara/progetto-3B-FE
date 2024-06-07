@@ -2,7 +2,6 @@ import datetime
 from dateutil.relativedelta import relativedelta
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 class C_spread:
     """
@@ -148,52 +147,6 @@ class C_spread:
         self.__C_spread = C_spread
 
         self.__C_spread.to_csv('C-spread.csv', index=False)
-
-    def plot_front_next(self, last_date=datetime.datetime(2021, 12, 31)):
-
-        # filter the data
-        Front = self.__C_spread_front[self.__C_spread_front['Date'] < last_date]
-        Next = self.__C_spread_next[self.__C_spread_next['Date'] < last_date]
-
-        # plot the C-spread for the front and next futures
-        plt.plot(Front['Date'], 100 * Front['C-spread'], label='Front')
-        plt.plot(Next['Date'], 100 * Next['C-spread'], label='Next')
-        plt.title('C-spread for the front and next futures')
-        plt.grid()
-        # set the y-axis limits
-        plt.ylim([-1, 5])
-        # limit the dates to the ones plotted and add 6 months of padding to both sides
-        plt.xlim([
-            Front['Date'].values[0] - np.timedelta64(180, 'D'),
-            Front['Date'].values[-1] + np.timedelta64(180, 'D')
-        ])
-        plt.xlabel('Date')
-        plt.ylabel('C-spread')
-        plt.legend()
-        plt.show()
-    
-    def plot_aggregated(self, last_date=datetime.datetime(2021, 12, 31)):
-        """
-        Plot the aggregated C-spread
-        """
-
-        # filter the data
-        C_spread = self.__C_spread[self.__C_spread['Date'] < last_date]
-
-        # plot the aggregated C-spread
-        plt.plot(C_spread['Date'], 100 * C_spread['C-spread'])
-        plt.title('Aggregated C-spread')
-        plt.grid()
-        # set the y-axis limits
-        plt.ylim([-0.6, 3.6])
-        # limit the dates to the ones plotted and add 6 months of padding to both sides
-        plt.xlim([
-            C_spread['Date'].values[0] - np.timedelta64(180, 'D'),
-            C_spread['Date'].values[-1] + np.timedelta64(180, 'D')
-        ])
-        plt.xlabel('Date')
-        plt.ylabel('C-spread')
-        plt.show()
     
     def save_aggregated(self, method='constant'):
         """

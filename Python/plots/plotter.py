@@ -1,6 +1,7 @@
 import datetime
 import numpy as np
 import pandas as pd
+from spreads import C_spread
 import matplotlib.pyplot as plt
 
 class Plotter:
@@ -76,3 +77,76 @@ class Plotter:
         if save:
             plt.savefig('boxplot_december.png')
 
+    def plot_front_next(self, C_spread:C_spread, end_date:datetime.datetime=None,
+        save:bool=True)->None:
+        """
+        Plot the C-spread for the front and next futures up to the end date.
+        If the end date is not provided, use the end of Phase III.
+        """
+
+        if end_date is None:
+            end_date = self.__PHASE_III_END
+
+        # filter the data
+        Front = C_spread.c_spread_front()
+        Next = C_spread.c_spread_next()
+
+        # filter the data
+        Front = Front[Front['Date'] < end_date]
+        Next = Next[Next['Date'] < end_date]
+
+        # plot the C-spread for the front and next futures
+        plt.plot(Front['Date'], 100 * Front['C-spread'], label='Front')
+        plt.plot(Next['Date'], 100 * Next['C-spread'], label='Next')
+        plt.title('C-spread for the front and next futures')
+        plt.grid()
+        # set the y-axis limits
+        plt.ylim([-1, 5])
+        # limit the dates to the ones plotted and add 6 months of padding to both sides
+        plt.xlim([
+            Front['Date'].values[0] - np.timedelta64(180, 'D'),
+            Front['Date'].values[-1] + np.timedelta64(180, 'D')
+        ])
+        plt.xlabel('Date')
+        plt.ylabel('C-spread')
+        plt.legend()
+        plt.show()
+
+        # save the plot as a .png file
+        if save:
+            plt.savefig('plot_front_next.png')
+
+    def plot_C_spread(self, C_spread:C_spread, end_date:datetime.datetime=None, save:bool=True)->None:
+        """
+        Plot the aggregated C-spread up to the end date.
+        If the end date is not provided, use the end of Phase III.
+        If save is True, save the plot as a .png file.
+        """
+
+        if end_date is None:
+            end_date = self.__PHASE_III_END
+
+        # get the data
+        C_spread = C_spread.c_spread()
+
+        # filter the data
+        C_spread = C_spread[C_spread['Date'] < end_date]
+
+        # plot the aggregated C-spread
+        plt.plot(C_spread['Date'], 100 * C_spread['C-spread'])
+        plt.title('Aggregated C-spread')
+        plt.grid()
+        # set the y-axis limits
+        plt.ylim([-0.6, 3.6])
+        # limit the dates to the ones plotted and add 6 months of padding to both sides
+        plt.xlim([
+            C_spread['Date'].values[0] - np.timedelta64(180, 'D'),
+            C_spread['Date'].values[-1] + np.timedelta64(180, 'D')
+        ])
+        plt.xlabel('Date')
+        plt.ylabel('C-spread')
+        plt.show()
+
+        # save the plot as a .png file
+        if save:
+            plt.savefig('plot_C_spread.png')
