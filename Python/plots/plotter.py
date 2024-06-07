@@ -256,8 +256,8 @@ class Plotter:
         plot_pacf(R['Risk Free Rate'], ax=axs[2, 1])
         axs[2, 1].set_title('PACF of the Risk-free rate')
 
-        plt.show()
-
         # save the plot as a .png file
         if save:
-            plt.savefig('plot_ACF_PACF.png')
+            fig.savefig('plot_ACF_PACF.png')
+        
+        plt.show()
