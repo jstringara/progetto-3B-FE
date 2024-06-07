@@ -272,7 +272,7 @@ class Plotter:
 
         # plot the simulated data
         ax.plot(log_returns ** 2, color='red')
-        ax.plot(fit.conditional_volatility ** 2, color='blue')
+        ax.plot((fit.conditional_volatility/10) ** 2, color='blue')
         ax.set_title('Simulated GARCH(1, 1) Model')
         ax.set_xlabel('Time')
         ax.set_ylabel('Log Returns')

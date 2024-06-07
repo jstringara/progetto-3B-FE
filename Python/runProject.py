@@ -193,4 +193,4 @@ fit = model.fit(disp='off')
 print('\n --- GARCH(1, 1) Model --- \n')
 print(fit.summary())
 
-# plotter.plot_garch(log_returns, fit/10)
+# plotter.plot_garch(log_returns, fit)
