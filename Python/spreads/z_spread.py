@@ -41,7 +41,7 @@ class Z_spread:
         Return the Z-spread
         """
 
-        return self.__z_spread
+        return self.__z_spread.copy()
     
     def __save(self)->None:
         """

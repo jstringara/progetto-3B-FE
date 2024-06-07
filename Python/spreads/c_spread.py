@@ -33,19 +33,19 @@ class C_spread:
         """
         Return the C-spread for the front futures
         """
-        return self.__C_spread_front
+        return self.__C_spread_front.copy()
 
     def c_spread_next(self):
         """
         Return the C-spread for the next futures
         """
-        return self.__C_spread_next
+        return self.__C_spread_next.copy()
     
     def c_spread(self):
         """
         Return the aggregated C-spread
         """
-        return self.__C_spread
+        return self.__C_spread.copy()
 
     def compute(self):
 
