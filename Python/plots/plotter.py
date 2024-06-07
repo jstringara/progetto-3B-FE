@@ -1,8 +1,11 @@
 import datetime
 import numpy as np
 import pandas as pd
-from spreads import C_spread, Z_spread
 import matplotlib.pyplot as plt
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+
+# custom imports
+from spreads import C_spread, Z_spread
 
 class Plotter:
     """
@@ -192,3 +195,56 @@ class Plotter:
         # save the plot as a .png file
         if save:
             plt.savefig('plot_C_Z_R.png')
+    
+    def plot_ACF_PACF(self, C_spread:C_spread, Z_spread:Z_spread, R:pd.DataFrame,
+        end_date:datetime.datetime=None, save:bool=True)->None:
+        """
+        Plot the ACF and PACF of the C-spread, Z-spread and risk-free rate up to the end date.
+        If the end date is not provided, use the end of Phase III.
+        If save is True, save the plot as a .png file.
+        """
+        
+        if end_date is None:
+            end_date = self.__PHASE_III_END
+
+        # get the data
+        C = C_spread.c_spread()
+        Z = Z_spread.z_spread()
+        
+        # filter the data
+        C = C[C['Date'] < end_date]
+        Z = Z[Z['Date'] < end_date]
+        R = R[R['Date'] < end_date]
+
+        # plot the ACF and PACF of the C-spread, Z-spread and risk-free rate
+        fig, axs = plt.subplots(3, 2, figsize=(20, 15))
+
+        # C-spread
+        # ACF
+        plot_acf(C['C-spread'], ax=axs[0, 0])
+        axs[0, 0].set_title('ACF of the C-spread')
+        # PACF
+        plot_pacf(C['C-spread'], ax=axs[0, 1])
+        axs[0, 1].set_title('PACF of the C-spread')
+
+        # Z-spread
+        # ACF
+        plot_acf(Z['Z-spread'], ax=axs[1, 0])
+        axs[1, 0].set_title('ACF of the Z-spread')
+        # PACF
+        plot_pacf(Z['Z-spread'], ax=axs[1, 1])
+        axs[1, 1].set_title('PACF of the Z-spread')
+
+        # Risk-free rate
+        # ACF
+        plot_acf(R['Risk Free Rate'], ax=axs[2, 0])
+        axs[2, 0].set_title('ACF of the Risk-free rate')
+        # PACF
+        plot_pacf(R['Risk Free Rate'], ax=axs[2, 1])
+        axs[2, 1].set_title('PACF of the Risk-free rate')
+
+        plt.show()
+
+        # save the plot as a .png file
+        if save:
+            plt.savefig('plot_ACF_PACF.png')

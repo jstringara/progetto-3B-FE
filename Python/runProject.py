@@ -8,6 +8,7 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 # custom imports
 from preprocess import Preprocessor
@@ -21,9 +22,10 @@ plotter = Plotter()
 # initialize the preprocessor and load the data
 preprocessor = Preprocessor()
 
-# Boxplot of the volumes for different months
+# load the OIS rates
+OIS_rates = preprocessor.preprocess_OIS_rates()
 
-# get the data
+# Get the volumes for the different months
 Volumes_march = preprocessor.preprocess_Volumes_front_Month('March')
 Volumes_june = preprocessor.preprocess_Volumes_front_Month('June')
 Volumes_september = preprocessor.preprocess_Volumes_front_Month('September')
@@ -40,7 +42,7 @@ Daily = preprocessor.preprocess_daily_price()
 Open_Interest = preprocessor.preprocess_open_interest()
 
 # Perform the bootstrap
-bootstrapper = Bootstrap(preprocessor.preprocess_OIS_rates())
+bootstrapper = Bootstrap(OIS_rates)
 
 # boxplot of the volumes for the different months
 # plotter.boxplot_months(Volumes_march, Volumes_june, Volumes_september, Front)
@@ -49,19 +51,19 @@ bootstrapper = Bootstrap(preprocessor.preprocess_OIS_rates())
 # plotter.boxplot_december(Front, Next, Next_2)
 
 # instantiate the C-spread object
-C_spread = C_spread(Front, Next, Daily, bootstrapper, Open_Interest)
+c_spread = C_spread(Front, Next, Daily, bootstrapper, Open_Interest)
 
 # compute the C-spread
-C_spread.compute()
+c_spread.compute()
 
 # plot the front and next C-spread
-# plotter.plot_front_next(C_spread)
+# plotter.plot_front_next(c_spread)
 
 # aggregate the C-spread with the 'constant' rollover rule
-C_spread.aggregate('constant')
+c_spread.aggregate('constant')
 
 # plot the aggregated C-spread
-# plotter.plot_C_spread(C_spread)
+# plotter.plot_C_spread(c_spread)
 
 # get the bonds list
 bonds = preprocessor.preprocess_bonds()
@@ -72,32 +74,16 @@ z_spread = Z_spread(bonds, bootstrapper)
 # compute the Z-spread
 z_spreads = z_spread.compute()
 
-# plot the C-spread, along with the Z-spread and the risk-free rate
-C = C_spread.c_spread()
-Z = z_spread.z_spread()
+# compute the risk free rate
 R = bootstrapper.interpolate(Front['Date'], Front['Expiry'])
 
-# filter to only use the dates up to the end of Phase III
-C = C[C['Date'] < PHASE_III_END]
-Z = Z[Z['Date'] < PHASE_III_END]
-R = R[R['Date'] < PHASE_III_END]
+# plot the C-spread, Z-spread and the Risk Free Rate
+# plotter.plot_C_Z_R(c_spread, z_spread, R)
 
-# plot the C-spread, Z-spread and risk-free rate
-plt.plot(C['Date'], 100 * C['C-spread'], label='C-spread')
-plt.plot(Z['Date'], 100 * Z['Z-spread'], label='Z-spread')
-plt.plot(R['Date'], 100 * R['Risk Free Rate'], label='Risk-free rate')
+# impose the Risk Free Rate to be the 3-month OIS rate
+R = OIS_rates[['Date', 'EUREON3M']]
+# rename the columns
+R.columns = ['Date', 'Risk Free Rate']
 
-plt.title('C-spread, Z-spread and risk-free rate')
-plt.grid()
-
-plt.xlabel('Date')
-plt.ylabel('Rate (%)')
-
-plt.legend()
-
-# pad the dates to make the plot more readable
-plt.xlim([C['Date'].values[0] - np.timedelta64(180, 'D'), C['Date'].values[-1] + np.timedelta64(180, 'D')])
-plt.ylim([-0.5, 3.6])
-
-plt.show()
-
+# plot the ACF and PACF of the three spreads
+# plotter.plot_ACF_PACF(c_spread, z_spread, R)
