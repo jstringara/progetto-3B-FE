@@ -70,6 +70,10 @@ class Z_spread:
                 t1 = datetime.datetime.now()
                 print(f'{bond.code()}: {t1 - t0} seconds')
 
+                # exclude the problematic bonds
+                if bond.code() ==  "XS0877820422":
+                    continue
+
                 # multiply by the Volume
                 z_spread['Z-spread'] += z_spread_bond['Z-spread'].values * z_spread_bond['Volume'].values
                 z_spread['Volume Traded'] += z_spread_bond['Volume'].values
