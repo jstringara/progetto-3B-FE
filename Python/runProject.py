@@ -6,17 +6,17 @@
 # > venv\Scripts\activate
 # > python runProject.py
 
-import datetime
 import numpy as np
 from matplotlib import pyplot as plt
 
 # custom imports
 from preprocess import Preprocessor
+from plots import Plotter
 from bootstrap import Bootstrap
 from spreads import C_spread, Z_spread
 
-# define variables
-PHASE_III_END = datetime.datetime(2021, 1, 1)
+# initialize the plotter
+plotter = Plotter()
 
 # initialize the preprocessor and load the data
 preprocessor = Preprocessor()
@@ -39,44 +39,16 @@ Daily = preprocessor.preprocess_daily_price()
 # get the open interest
 Open_Interest = preprocessor.preprocess_open_interest()
 
-# # boxplot of the volumes for the different months
-# # Volumes of March, June, September and December for PHASE III in log scale
-# plt.boxplot(
-#     [
-#         np.log10(Volumes_march['Volume'] + 1),
-#         np.log10(Volumes_june['Volume'] + 1),
-#         np.log10(Volumes_september['Volume'] + 1),
-#         np.log10(Front[Front['Date'] < PHASE_III_END]['Volume'] + 1)
-#     ],
-#     tick_labels=['March', 'June', 'September', 'December']
-# )
-
-# plt.title('Boxplot of the volumes for different months')
-# plt.grid()
-# plt.xlabel('Months')
-# plt.ylabel('Volume (log scale)')
-# plt.show()
-
-# # Boxplot of the volumes for front, next and next_2 December futures
-# plt.boxplot(
-#     [
-#         np.log10(Front[Front['Date'] < PHASE_III_END]['Volume'] + 1),
-#         np.log10(Next[Next['Date'] < PHASE_III_END]['Volume'] + 1),
-#         np.log10(Next_2[Next_2['Date'] < PHASE_III_END]['Volume'] + 1)
-#     ],
-#     tick_labels=['Front', 'Next', 'Next_2']
-# )
-
-# plt.title('Boxplot of the volumes for front, next and next_2 December futures')
-# plt.grid()
-# plt.xlabel('Futures')
-# plt.ylabel('Volume (log scale)')
-# plt.show()
-
 # Perform the bootstrap
 bootstrapper = Bootstrap(preprocessor.preprocess_OIS_rates())
 
-# compute the C-spread
+# boxplot of the volumes for the different months
+# plotter.boxplot_months(Volumes_march, Volumes_june, Volumes_september, Front)
+
+# boxplot of the volumes for the front, next and next_2 December futures
+# plotter.boxplot_december(Front, Next, Next_2)
+
+# instantiate the C-spread object
 C_spread = C_spread(Front, Next, Daily, bootstrapper, Open_Interest)
 
 # compute the C-spread
@@ -93,15 +65,15 @@ C_spread.aggregate('constant')
 # get the bonds list
 bonds = preprocessor.preprocess_bonds()
 
-# compute the Z-spread
+# instantiate the Z-spread object
 z_spread = Z_spread(bonds, bootstrapper)
 
 # compute the Z-spread
 z_spreads = z_spread.compute()
 
 # plot the C-spread, along with the Z-spread and the risk-free rate
-C = C_spread._C_spread__C_spread
-Z = z_spread._Z_spread__z_spread
+C = C_spread.c_spread()
+Z = z_spread.z_spread()
 R = bootstrapper.interpolate(Front['Date'], Front['Expiry'])
 
 # filter to only use the dates up to the end of Phase III
