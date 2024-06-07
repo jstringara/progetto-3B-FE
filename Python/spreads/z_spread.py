@@ -1,3 +1,5 @@
+import os
+import pickle
 import datetime
 import pandas as pd
 import numpy as np
@@ -12,6 +14,15 @@ class Z_spread:
         # save the bonds
         self.__bonds = bonds
 
+        # parent directory
+        self.__parent_directory = os.path.dirname(os.path.abspath(__file__))
+
+        # if there is a data file, load it into the bonds
+        if os.path.exists(os.path.join(self.__parent_directory, 'data.pkl')):
+            with open(os.path.join(self.__parent_directory, 'data.pkl'), 'rb') as f:
+                print('Loading data')
+                self.__bonds = pickle.load(f)
+
         # aggregate the bonds by issuer
         self.__aggregate_bonds_by_issuer()
 
@@ -23,6 +34,31 @@ class Z_spread:
 
         # Z-spread
         self.__z_spread = None
+
+
+    def z_spread(self)->pd.DataFrame:
+        """
+        Return the Z-spread
+        """
+
+        return self.__z_spread.copy()
+    
+    def __save(self)->None:
+        """
+        Save the data for the bonds in a pickle file
+        """
+
+        file_name = os.path.join(self.__parent_directory, 'data.pkl')
+
+        # is the save file does not exist
+        if not os.path.exists(file_name):
+            # create the save file
+            with open(file_name, 'wb') as f:
+                pass
+        
+        # save the bonds list to the file
+        with open(file_name, 'wb') as f:
+            pickle.dump(self.__bonds, f)
 
     def __aggregate_bonds_by_issuer(self)->None:
         """
@@ -68,7 +104,7 @@ class Z_spread:
                 t0 = datetime.datetime.now()
                 z_spread_bond = bond.z_spread(self.__Bootstrapper)
                 t1 = datetime.datetime.now()
-                print(f'{bond.code()}: {t1 - t0} seconds')
+                print(f'{bond.code()}: {(t1 - t0).total_seconds()} seconds')
 
                 # exclude the problematic bonds
                 if bond.code() ==  "XS0877820422":
@@ -94,9 +130,6 @@ class Z_spread:
         Compute the Z-spread for the bonds.
         """
 
-        if self.__z_spreads_by_issuer is not None:
-            return
-
         t0 = datetime.datetime.now()
 
         # compute the Z-spread by issuer
@@ -116,4 +149,6 @@ class Z_spread:
         # print the time taken to compute the Z-spread in seconds
         print(f'Time taken to compute the Z-spread: {t1 - t0} seconds')
 
-
+        # if there is no data file, save the data
+        if not os.path.exists(os.path.join(self.__parent_directory, 'data.pkl')):
+            self.__save()

@@ -6,24 +6,27 @@
 # > venv\Scripts\activate
 # > python runProject.py
 
-import datetime
 import numpy as np
 from matplotlib import pyplot as plt
+from arch.unitroot import DFGLS
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 # custom imports
 from preprocess import Preprocessor
+from plots import Plotter
 from bootstrap import Bootstrap
 from spreads import C_spread, Z_spread
 
-# define variables
-PHASE_III_END = datetime.datetime(2021, 1, 1)
+# initialize the plotter
+plotter = Plotter()
 
 # initialize the preprocessor and load the data
 preprocessor = Preprocessor()
 
-# Boxplot of the volumes for different months
+# load the OIS rates
+OIS_rates = preprocessor.preprocess_OIS_rates()
 
-# get the data
+# Get the volumes for the different months
 Volumes_march = preprocessor.preprocess_Volumes_front_Month('March')
 Volumes_june = preprocessor.preprocess_Volumes_front_Month('June')
 Volumes_september = preprocessor.preprocess_Volumes_front_Month('September')
@@ -39,92 +42,74 @@ Daily = preprocessor.preprocess_daily_price()
 # get the open interest
 Open_Interest = preprocessor.preprocess_open_interest()
 
-# # boxplot of the volumes for the different months
-# # Volumes of March, June, September and December for PHASE III in log scale
-# plt.boxplot(
-#     [
-#         np.log10(Volumes_march['Volume'] + 1),
-#         np.log10(Volumes_june['Volume'] + 1),
-#         np.log10(Volumes_september['Volume'] + 1),
-#         np.log10(Front[Front['Date'] < PHASE_III_END]['Volume'] + 1)
-#     ],
-#     tick_labels=['March', 'June', 'September', 'December']
-# )
-
-# plt.title('Boxplot of the volumes for different months')
-# plt.grid()
-# plt.xlabel('Months')
-# plt.ylabel('Volume (log scale)')
-# plt.show()
-
-# # Boxplot of the volumes for front, next and next_2 December futures
-# plt.boxplot(
-#     [
-#         np.log10(Front[Front['Date'] < PHASE_III_END]['Volume'] + 1),
-#         np.log10(Next[Next['Date'] < PHASE_III_END]['Volume'] + 1),
-#         np.log10(Next_2[Next_2['Date'] < PHASE_III_END]['Volume'] + 1)
-#     ],
-#     tick_labels=['Front', 'Next', 'Next_2']
-# )
-
-# plt.title('Boxplot of the volumes for front, next and next_2 December futures')
-# plt.grid()
-# plt.xlabel('Futures')
-# plt.ylabel('Volume (log scale)')
-# plt.show()
-
 # Perform the bootstrap
-bootstrapper = Bootstrap(preprocessor.preprocess_OIS_rates())
+bootstrapper = Bootstrap(OIS_rates)
+
+# boxplot of the volumes for the different months
+# plotter.boxplot_months(Volumes_march, Volumes_june, Volumes_september, Front)
+
+# boxplot of the volumes for the front, next and next_2 December futures
+# plotter.boxplot_december(Front, Next, Next_2)
+
+# instantiate the C-spread object
+c_spread = C_spread(Front, Next, Daily, bootstrapper, Open_Interest)
 
 # compute the C-spread
-C_spread = C_spread(Front, Next, Daily, bootstrapper, Open_Interest)
+c_spread.compute()
 
-# compute the C-spread
-C_spread.compute()
-
-# C_spread.plot_front_next()
+# plot the front and next C-spread
+# plotter.plot_front_next(c_spread)
 
 # aggregate the C-spread with the 'constant' rollover rule
-C_spread.aggregate('constant')
+c_spread.aggregate('constant')
 
 # plot the aggregated C-spread
-# C_spread.plot_aggregated()
+# plotter.plot_C_spread(c_spread)
 
 # get the bonds list
 bonds = preprocessor.preprocess_bonds()
 
-# compute the Z-spread
+# instantiate the Z-spread object
 z_spread = Z_spread(bonds, bootstrapper)
 
 # compute the Z-spread
 z_spreads = z_spread.compute()
 
-# plot the C-spread, along with the Z-spread and the risk-free rate
-C = C_spread._C_spread__C_spread
-Z = z_spread._Z_spread__z_spread
+# compute the risk free rate
 R = bootstrapper.interpolate(Front['Date'], Front['Expiry'])
 
-# filter to only use the dates up to the end of Phase III
-C = C[C['Date'] < PHASE_III_END]
-Z = Z[Z['Date'] < PHASE_III_END]
-R = R[R['Date'] < PHASE_III_END]
+# plot the C-spread, Z-spread and the Risk Free Rate
+# plotter.plot_C_Z_R(c_spread, z_spread, R)
 
-# plot the C-spread, Z-spread and risk-free rate
-plt.plot(C['Date'], 100 * C['C-spread'], label='C-spread')
-plt.plot(Z['Date'], 100 * Z['Z-spread'], label='Z-spread')
-plt.plot(R['Date'], 100 * R['Risk Free Rate'], label='Risk-free rate')
+# impose the Risk Free Rate to be the 3-month OIS rate
+R = OIS_rates[['Date', 'EUREON3M']]
+# rename the columns
+R.columns = ['Date', 'Risk Free Rate']
 
-plt.title('C-spread, Z-spread and risk-free rate')
-plt.grid()
+# plot the ACF and PACF of the three spreads
+# plotter.plot_ACF_PACF(c_spread, z_spread, R)
 
-plt.xlabel('Date')
-plt.ylabel('Rate (%)')
+# perform the ADF GLS test on the C-spread
+test_C = DFGLS(c_spread.c_spread()['C-spread'])
+print('\n --- C-Spread --- \n')
+print(test_C.summary())
 
-plt.legend()
+# perform the ADF GLS test on the C-spread differences
+test_C_diff = DFGLS(c_spread.c_spread()['C-spread'].diff().dropna())
+print('\n --- First Difference of the C-Spread --- \n')
+print(test_C_diff.summary())
 
-# pad the dates to make the plot more readable
-plt.xlim([C['Date'].values[0] - np.timedelta64(180, 'D'), C['Date'].values[-1] + np.timedelta64(180, 'D')])
-plt.ylim([-0.5, 3.6])
+# perform the ADF GLS test on the Z-spread
+test_Z = DFGLS(z_spread.z_spread()['Z-spread'])
+print('\n --- Z-Spread --- \n')
+print(test_Z.summary())
 
-plt.show()
+# perform the ADF GLS test on the Z-spread differences
+test_Z_diff = DFGLS(z_spread.z_spread()['Z-spread'].diff().dropna())
+print('\n --- First Difference of the Z-Spread --- \n')
+print(test_Z_diff.summary())
 
+# perform the ADF GLS test on the Risk-Free Rate
+test_R = DFGLS(R['Risk Free Rate'])
+print('\n --- Risk-Free Rate --- \n')
+print(test_R.summary())

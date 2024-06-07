@@ -184,7 +184,7 @@ class Bond:
         if not coupon_dates:
             coupon_dates.append(self.__maturity_date)
 
-        return coupon_dates
+        return coupon_dates.copy()
 
     def code(self)->str:
         """
@@ -202,7 +202,7 @@ class Bond:
         """
         Return the dates of the bond.
         """
-        return self.__data['Date']
+        return self.__data['Date'].copy()
 
     def show_data(self)->None:
         """
@@ -318,5 +318,5 @@ class Bond:
         # save the z-spread
         self.__z_spread = z_spread
 
-        return z_spread
+        return z_spread.copy()
     
