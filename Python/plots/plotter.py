@@ -28,8 +28,9 @@ class Plotter:
             end_date = self.__PHASE_III_END
 
         # boxplot of the volumes for the different months
+        fig, ax = plt.subplots()
         # Volumes of March, June, September and December for PHASE III in log scale
-        plt.boxplot(
+        ax.boxplot(
             [
                 np.log10(March['Volume'] + 1),
                 np.log10(June['Volume'] + 1),
@@ -39,15 +40,16 @@ class Plotter:
             tick_labels=['March', 'June', 'September', 'December']
         )
 
-        plt.title('Boxplot of the volumes for different months')
-        plt.grid()
-        plt.xlabel('Months')
-        plt.ylabel('Volume (log scale)')
-        plt.show()
+        ax.set_title('Boxplot of the volumes for different months')
+        ax.grid()
+        ax.set_xlabel('Months')
+        ax.set_ylabel('Volume (log scale)')
 
         # save the plot as a .png file
         if save:
-            plt.savefig('boxplot_months.png')
+            fig.savefig('boxplot_months.png')
+
+        plt.show()
     
     def boxplot_december(self, Front:pd.DataFrame, Next:pd.DataFrame, Next_2:pd.DataFrame,
         end_date:datetime.datetime=None, save:bool=True)->None:
@@ -61,7 +63,8 @@ class Plotter:
             end_date = self.__PHASE_III_END
 
         # Boxplot of the volumes for front, next and next_2 December futures
-        plt.boxplot(
+        fig, ax = plt.subplots()
+        ax.boxplot(
             [
                 np.log10(Front[Front['Date'] < end_date]['Volume'] + 1),
                 np.log10(Next[Next['Date'] < end_date]['Volume'] + 1),
@@ -70,15 +73,16 @@ class Plotter:
             tick_labels=['Front', 'Next', 'Next_2']
         )
 
-        plt.title('Boxplot of the volumes for front, next and next_2 December futures')
-        plt.grid()
-        plt.xlabel('Futures')
-        plt.ylabel('Volume (log scale)')
-        plt.show()
+        ax.set_title('Boxplot of the volumes for front, next and next_2 December futures')
+        ax.grid()
+        ax.set_xlabel('Futures')
+        ax.set_ylabel('Volume (log scale)')
 
         # save the plot as a .png file
         if save:
-            plt.savefig('boxplot_december.png')
+            fig.savefig('boxplot_december.png')
+
+        plt.show()
 
     def plot_front_next(self, C_spread:C_spread, end_date:datetime.datetime=None,
         save:bool=True)->None:
@@ -98,26 +102,29 @@ class Plotter:
         Front = Front[Front['Date'] < end_date]
         Next = Next[Next['Date'] < end_date]
 
+        fig, ax = plt.subplots()
+
         # plot the C-spread for the front and next futures
-        plt.plot(Front['Date'], 100 * Front['C-spread'], label='Front')
-        plt.plot(Next['Date'], 100 * Next['C-spread'], label='Next')
-        plt.title('C-spread for the front and next futures')
-        plt.grid()
+        ax.plot(Front['Date'], 100 * Front['C-spread'], label='Front')
+        ax.plot(Next['Date'], 100 * Next['C-spread'], label='Next')
+        ax.set_title('C-spread for the front and next futures')
+        ax.grid()
         # set the y-axis limits
-        plt.ylim([-1, 5])
+        ax.set_ylim([-1, 5])
         # limit the dates to the ones plotted and add 6 months of padding to both sides
-        plt.xlim([
+        ax.set_xlim([
             Front['Date'].values[0] - np.timedelta64(180, 'D'),
             Front['Date'].values[-1] + np.timedelta64(180, 'D')
         ])
-        plt.xlabel('Date')
-        plt.ylabel('C-spread')
-        plt.legend()
-        plt.show()
+        ax.set_xlabel('Date')
+        ax.set_ylabel('C-spread')
+        ax.legend()
 
         # save the plot as a .png file
         if save:
-            plt.savefig('plot_front_next.png')
+            fig.savefig('plot_front_next.png')
+
+        plt.show()
 
     def plot_C_spread(self, C_spread:C_spread, end_date:datetime.datetime=None, save:bool=True)->None:
         """
@@ -136,23 +143,26 @@ class Plotter:
         C_spread = C_spread[C_spread['Date'] < end_date]
 
         # plot the aggregated C-spread
-        plt.plot(C_spread['Date'], 100 * C_spread['C-spread'])
-        plt.title('Aggregated C-spread')
-        plt.grid()
+        fig, ax = plt.subplots()
+
+        ax.plot(C_spread['Date'], 100 * C_spread['C-spread'])
+        ax.set_title('Aggregated C-spread')
+        ax.grid()
         # set the y-axis limits
-        plt.ylim([-0.6, 3.6])
+        ax.set_ylim([-0.6, 3.6])
         # limit the dates to the ones plotted and add 6 months of padding to both sides
-        plt.xlim([
+        ax.set_xlim([
             C_spread['Date'].values[0] - np.timedelta64(180, 'D'),
             C_spread['Date'].values[-1] + np.timedelta64(180, 'D')
         ])
-        plt.xlabel('Date')
-        plt.ylabel('C-spread')
-        plt.show()
+        ax.set_xlabel('Date')
+        ax.set_ylabel('C-spread')
 
         # save the plot as a .png file
         if save:
-            plt.savefig('plot_C_spread.png')
+            fig.savefig('plot_C_spread.png')
+
+        plt.show()
 
     def plot_C_Z_R(self, C_spread:C_spread, Z_spread:Z_spread, R:pd.DataFrame,
         end_date:datetime.datetime=None, save:bool=True)->None:
@@ -175,26 +185,29 @@ class Plotter:
         R = R[R['Date'] < end_date]
 
         # plot the C-spread, Z-spread and risk-free rate
-        plt.plot(C['Date'], 100 * C['C-spread'], label='C-spread')
-        plt.plot(Z['Date'], 100 * Z['Z-spread'], label='Z-spread')
-        plt.plot(R['Date'], 100 * R['Risk Free Rate'], label='Risk-free rate')
-        plt.title('C-spread, Z-spread and risk-free rate')
-        plt.grid()
+        fig, ax = plt.subplots()
+
+        ax.plot(C['Date'], 100 * C['C-spread'], label='C-spread')
+        ax.plot(Z['Date'], 100 * Z['Z-spread'], label='Z-spread')
+        ax.plot(R['Date'], 100 * R['Risk Free Rate'], label='Risk-free rate')
+        ax.set_title('C-spread, Z-spread and risk-free rate')
+        ax.grid()
         # set the y-axis limits
-        plt.ylim([-0.5, 3.6])
+        ax.set_ylim([-0.5, 3.6])
         # limit the dates to the ones plotted and add 6 months of padding to both sides
-        plt.xlim([
+        ax.set_xlim([
             C['Date'].values[0] - np.timedelta64(180, 'D'),
             C['Date'].values[-1] + np.timedelta64(180, 'D')
         ])
-        plt.xlabel('Date')
-        plt.ylabel('Rate (%)')
-        plt.legend()
-        plt.show()
+        ax.set_xlabel('Date')
+        ax.set_ylabel('Rate (%)')
+        ax.legend()
 
         # save the plot as a .png file
         if save:
-            plt.savefig('plot_C_Z_R.png')
+            fig.savefig('plot_C_Z_R.png')
+
+        plt.show()
     
     def plot_ACF_PACF(self, C_spread:C_spread, Z_spread:Z_spread, R:pd.DataFrame,
         end_date:datetime.datetime=None, save:bool=True)->None:

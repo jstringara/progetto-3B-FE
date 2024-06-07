@@ -45,10 +45,10 @@ Open_Interest = preprocessor.preprocess_open_interest()
 bootstrapper = Bootstrap(OIS_rates)
 
 # boxplot of the volumes for the different months
-# plotter.boxplot_months(Volumes_march, Volumes_june, Volumes_september, Front)
+plotter.boxplot_months(Volumes_march, Volumes_june, Volumes_september, Front)
 
 # boxplot of the volumes for the front, next and next_2 December futures
-# plotter.boxplot_december(Front, Next, Next_2)
+plotter.boxplot_december(Front, Next, Next_2)
 
 # instantiate the C-spread object
 c_spread = C_spread(Front, Next, Daily, bootstrapper, Open_Interest)
@@ -57,13 +57,13 @@ c_spread = C_spread(Front, Next, Daily, bootstrapper, Open_Interest)
 c_spread.compute()
 
 # plot the front and next C-spread
-# plotter.plot_front_next(c_spread)
+plotter.plot_front_next(c_spread)
 
 # aggregate the C-spread with the 'constant' rollover rule
 c_spread.aggregate('constant')
 
 # plot the aggregated C-spread
-# plotter.plot_C_spread(c_spread)
+plotter.plot_C_spread(c_spread)
 
 # get the bonds list
 bonds = preprocessor.preprocess_bonds()
@@ -78,7 +78,7 @@ z_spreads = z_spread.compute()
 R = bootstrapper.interpolate(Front['Date'], Front['Expiry'])
 
 # plot the C-spread, Z-spread and the Risk Free Rate
-# plotter.plot_C_Z_R(c_spread, z_spread, R)
+plotter.plot_C_Z_R(c_spread, z_spread, R)
 
 # impose the Risk Free Rate to be the 3-month OIS rate
 R = OIS_rates[['Date', 'EUREON3M']]
