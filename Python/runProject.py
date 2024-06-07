@@ -152,31 +152,45 @@ def johansen_test(data, det_order, k_ar_diff=1):
     
     # print the matrix
     print('\n --- Johansen Cointegration Test --- \n')
-    for i, row in enumerate(zip(result.lr1, result.lr2)):
-        print(f'q <= {i}: {row[0]:.2f} {row[1]:.2f}')
+
+    df = pd.DataFrame(data = {
+        'Test': ['q <= 0', 'q <= 1', 'q <= 2'],
+        'Trace Statistic': result.lr1,
+        'Eigenvalue Statistic': result.lr2,
+        'Trace Stat 99%': result.cvt[:, 0],
+        'Trace Stat 95%': result.cvt[:, 1],
+        'Trace Stat 90%': result.cvt[:, 2],
+        'Eig Stat 99%': result.cvm[:, 0],
+        'Eig Stat 95%': result.cvm[:, 1],
+        'Eig Stat 90%': result.cvm[:, 2]
+    })
+
+    print(df.round(2))
 
     return result
 
 # perform the johansen test
-johansen_result = johansen_test(Y, det_order=-1)
+johansen_result = johansen_test(Y.values, -1)
+
+# get the eigenvector corresponding to the largest eigenvalue
+cointegration_coefficients = johansen_result.evec[:, 0] / johansen_result.evec[0, 0]
+
+# print the cointegration coefficients
+print('\n --- Cointegration Coefficients --- \n')
+print(cointegration_coefficients.round(2))
+
+# build the ECT
+ect = Y['C-spread'] + cointegration_coefficients[1] * Y['Z-spread'] + cointegration_coefficients[2] * Y['Risk Free Rate']
 
 # build a GARCH(1, 1) model for the variance of the daily price
 log_returns = np.log(Daily['Price']/Daily['Price'].shift(1)).dropna()
 
 # fit the GARCH(1, 1) model
-model = arch_model(log_returns, vol='Garch', p=1, q=1)
-fit = model.fit()
+model = arch_model(log_returns * 10, vol='Garch', p=1, q=1)
+fit = model.fit(disp='off')
 
 # print the summary
 print('\n --- GARCH(1, 1) Model --- \n')
 print(fit.summary())
 
-plotter.plot_garch(log_returns, fit)
-
-# build the VECM model
-endog = pd.DataFrame({
-    'C-spread': C[C['Date'] < PHASE_III_END]['C-spread'].values,
-    'Z-spread': Z[Z['Date'] < PHASE_III_END]['Z-spread'].values,
-    'Risk Free Rate': R[R['Date'] < PHASE_III_END]['Risk Free Rate'].values
-})
-
+# plotter.plot_garch(log_returns, fit/10)
