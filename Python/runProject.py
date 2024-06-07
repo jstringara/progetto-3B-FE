@@ -7,8 +7,11 @@
 # > python runProject.py
 
 import numpy as np
+import pandas as pd
+import datetime
 from matplotlib import pyplot as plt
 from arch.unitroot import DFGLS
+from statsmodels.tsa.vector_ar.vecm import coint_johansen
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 # custom imports
@@ -16,6 +19,8 @@ from preprocess import Preprocessor
 from plots import Plotter
 from bootstrap import Bootstrap
 from spreads import C_spread, Z_spread
+
+PHASE_III_END = datetime.datetime(2021, 1, 1)
 
 # initialize the plotter
 plotter = Plotter()
@@ -63,6 +68,8 @@ c_spread.compute()
 # aggregate the C-spread with the 'constant' rollover rule
 c_spread.aggregate('constant')
 
+C = c_spread.c_spread()
+
 # plot the aggregated C-spread
 # plotter.plot_C_spread(c_spread)
 
@@ -72,8 +79,9 @@ bonds = preprocessor.preprocess_bonds()
 # instantiate the Z-spread object
 z_spread = Z_spread(bonds, bootstrapper)
 
-# compute the Z-spread
-z_spreads = z_spread.compute()
+z_spread.compute()
+
+Z = z_spread.z_spread()
 
 # compute the risk free rate
 R = bootstrapper.interpolate(Front['Date'], Front['Expiry'])
@@ -82,7 +90,10 @@ R = bootstrapper.interpolate(Front['Date'], Front['Expiry'])
 # plotter.plot_C_Z_R(c_spread, z_spread, R)
 
 # impose the Risk Free Rate to be the 3-month OIS rate
-R = OIS_rates[['Date', 'EUREON3M']]
+R = pd.DataFrame()
+R['Date'] = Front['Date'].values
+R = pd.merge(R, OIS_rates[['Date', 'EUREON3M']], on='Date', how='left')
+R = R.ffill()
 # rename the columns
 R.columns = ['Date', 'Risk Free Rate']
 
@@ -90,26 +101,56 @@ R.columns = ['Date', 'Risk Free Rate']
 # plotter.plot_ACF_PACF(c_spread, z_spread, R)
 
 # perform the ADF GLS test on the C-spread
-test_C = DFGLS(c_spread.c_spread()['C-spread'])
+test_C = DFGLS(C[C['Date'] < PHASE_III_END]['C-spread'])
 print('\n --- C-Spread --- \n')
 print(test_C.summary())
 
 # perform the ADF GLS test on the C-spread differences
-test_C_diff = DFGLS(c_spread.c_spread()['C-spread'].diff().dropna())
+test_C_diff = DFGLS(C[C['Date'] < PHASE_III_END]['C-spread'].diff().dropna())
 print('\n --- First Difference of the C-Spread --- \n')
 print(test_C_diff.summary())
 
 # perform the ADF GLS test on the Z-spread
-test_Z = DFGLS(z_spread.z_spread()['Z-spread'])
+test_Z = DFGLS(Z[Z['Date'] < PHASE_III_END]['Z-spread'])
 print('\n --- Z-Spread --- \n')
 print(test_Z.summary())
 
 # perform the ADF GLS test on the Z-spread differences
-test_Z_diff = DFGLS(z_spread.z_spread()['Z-spread'].diff().dropna())
+test_Z_diff = DFGLS(Z[Z['Date'] < PHASE_III_END]['Z-spread'].diff().dropna())
 print('\n --- First Difference of the Z-Spread --- \n')
 print(test_Z_diff.summary())
 
 # perform the ADF GLS test on the Risk-Free Rate
-test_R = DFGLS(R['Risk Free Rate'])
+test_R = DFGLS(R[R['Date'] < PHASE_III_END]['Risk Free Rate'])
 print('\n --- Risk-Free Rate --- \n')
 print(test_R.summary())
+
+# perform the johansen test on the C-spread, Z-spread and Risk-Free Rate
+Y = pd.DataFrame({
+    'C-spread': C[C['Date'] < PHASE_III_END]['C-spread'].values,
+    'Z-spread': Z[Z['Date'] < PHASE_III_END]['Z-spread'].values,
+    'Risk Free Rate': R[R['Date'] < PHASE_III_END]['Risk Free Rate'].values
+})
+
+def johansen_test(data, det_order, k_ar_diff=1):
+    """
+    Performs the Johansen cointegration test and prints the results.
+    
+    Parameters:
+    data (numpy.ndarray): The time series data for the cointegration test.
+    det_order (int): The order of the deterministic terms.
+                     -1: No constant or trend.
+                      0: Constant term only.
+                      1: Constant and trend terms.
+    k_ar_diff (int): The number of lags to include in the VAR model.
+    """
+    result = coint_johansen(data, det_order, k_ar_diff)
+    
+    # print the matrix
+    print('\n --- Johansen Cointegration Test --- \n')
+    for i, row in enumerate(zip(result.lr1, result.lr2)):
+        print(f'q <= {i}: {row[0]:.2f} {row[1]:.2f}')
+
+
+# perform the johansen test
+johansen_test(Y, det_order=-1)
