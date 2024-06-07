@@ -261,3 +261,24 @@ class Plotter:
             fig.savefig('plot_ACF_PACF.png')
         
         plt.show()
+    
+    def plot_garch(self, log_returns:np.array, fit:object, save:bool=True)->None:
+        """
+        Plot the simulated GARCH(1, 1) model.
+        If save is True, save the plot as a .png file.
+        """
+
+        fig, ax = plt.subplots()
+
+        # plot the simulated data
+        ax.plot(log_returns ** 2, color='red')
+        ax.plot(fit.conditional_volatility ** 2, color='blue')
+        ax.set_title('Simulated GARCH(1, 1) Model')
+        ax.set_xlabel('Time')
+        ax.set_ylabel('Log Returns')
+        plt.legend(['Squared Log Returns', 'Conditional Volatility'])
+        
+        if save:
+            fig.savefig('plot_garch.png')
+
+        plt.show()

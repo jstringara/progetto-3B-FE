@@ -10,8 +10,9 @@ import numpy as np
 import pandas as pd
 import datetime
 from matplotlib import pyplot as plt
+from arch import arch_model
 from arch.unitroot import DFGLS
-from statsmodels.tsa.vector_ar.vecm import coint_johansen
+from statsmodels.tsa.vector_ar.vecm import coint_johansen, VECM
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 # custom imports
@@ -43,6 +44,9 @@ Next_2 = preprocessor.preprocess_December(years_offset=2)
 
 # get the daily prices
 Daily = preprocessor.preprocess_daily_price()
+
+# get the extra variables
+Extra = preprocessor.preprocess_extra_variables()
 
 # get the open interest
 Open_Interest = preprocessor.preprocess_open_interest()
@@ -151,6 +155,28 @@ def johansen_test(data, det_order, k_ar_diff=1):
     for i, row in enumerate(zip(result.lr1, result.lr2)):
         print(f'q <= {i}: {row[0]:.2f} {row[1]:.2f}')
 
+    return result
 
 # perform the johansen test
-johansen_test(Y, det_order=-1)
+johansen_result = johansen_test(Y, det_order=-1)
+
+# build a GARCH(1, 1) model for the variance of the daily price
+log_returns = np.log(Daily['Price']/Daily['Price'].shift(1)).dropna()
+
+# fit the GARCH(1, 1) model
+model = arch_model(log_returns, vol='Garch', p=1, q=1)
+fit = model.fit()
+
+# print the summary
+print('\n --- GARCH(1, 1) Model --- \n')
+print(fit.summary())
+
+plotter.plot_garch(log_returns, fit)
+
+# build the VECM model
+endog = pd.DataFrame({
+    'C-spread': C[C['Date'] < PHASE_III_END]['C-spread'].values,
+    'Z-spread': Z[Z['Date'] < PHASE_III_END]['Z-spread'].values,
+    'Risk Free Rate': R[R['Date'] < PHASE_III_END]['Risk Free Rate'].values
+})
+
