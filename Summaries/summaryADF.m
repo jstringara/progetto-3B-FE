@@ -1,5 +1,14 @@
 function T = summaryADF(C_spread, Z_spread, risk_free_rate, save_table)
-
+% computeECT follows the Johansen procedure to establish whether the time series are cointegrated
+% or not, finds the number of cointegration relationships and the
+% cointegration vector
+%
+% INPUTS:
+% C_spread:         C_spread
+% Z_spread:         Z_index
+% risk_free_rate:   risk free rate three months
+% save figure:      flag to save the figure
+% print_table:      flag to print the table
 
 % perform the ADF test
 [h, pValue_c_spread, stat_c_spread, cValue_c_spread] = adftest(C_spread.C_Spread);
@@ -11,7 +20,7 @@ function T = summaryADF(C_spread, Z_spread, risk_free_rate, save_table)
     adftest(diff(Z_spread.Z_Spread));
 
 [h, pValue_risk_free_rate, stat_risk_free_rate, cValue_risk_free_rate] = ...
-    adftest(risk_free_rate.Risk_Free_Rate);
+    adf_gla_test(risk_free_rate.Risk_Free_Rate);
 [h_diff, pValue_risk_free_rate_diff, stat_risk_free_rate_diff, cValue_risk_free_rate_diff] = ...
     adftest(diff(risk_free_rate.Risk_Free_Rate));
 

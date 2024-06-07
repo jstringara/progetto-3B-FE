@@ -2,7 +2,9 @@ function plot_ACF_PACF(table, title, save_figure)
 % plot_ACF_PACF plots the ACF and PACF
 %
 % INPUTS
-%  table: the table with the data
+% table:        the table with the data
+% title:        title
+% save_figure:  flag to save the figure
 
 figure;
 subplot(2, 1, 1)

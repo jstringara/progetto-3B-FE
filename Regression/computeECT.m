@@ -1,4 +1,18 @@
 function ect = computeECT(C_spread, Z_spread, risk_free_rate, save_figure, print_table)
+% computeECT follows the Johansen procedure to establish whether the time series are cointegrated
+% or not, finds the number of cointegration relationships and the
+% cointegration vector
+%
+% INPUTS:
+% C_spread:         C_spread
+% Z_spread:         Z_index
+% risk_free_rate:   risk free rate three months
+% save figure:      flag to save the figure
+% print_table:      flag to print the table
+%
+% OUTPUTS:
+% ect:              error correction term
+
 
 Y_joc = table( ...
     C_spread.Date, ...

@@ -1,4 +1,6 @@
 function T = summaryModels(mdl_I, mdl_II, mdl_III, mdl_IV, mdl_V, mdl_VI, save_file, file_name)
+% summaryModels summarize the results obtain with the different six models
+
 % create the table
 Models = ["Model I"; "Model II"; "Model III"; "Model IV"; "Model V"; "Model VI"];
 % a row for each regression coefficient of model VI, Obs, BIC and AIC
