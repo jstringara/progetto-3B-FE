@@ -54,13 +54,14 @@ C_spread = C_spread(Front, Next, Daily, bootstrapper, Open_Interest)
 # compute the C-spread
 C_spread.compute()
 
-# C_spread.plot_front_next()
+# plot the front and next C-spread
+# plotter.plot_front_next(C_spread)
 
 # aggregate the C-spread with the 'constant' rollover rule
 C_spread.aggregate('constant')
 
 # plot the aggregated C-spread
-# C_spread.plot_aggregated()
+# plotter.plot_C_spread(C_spread)
 
 # get the bonds list
 bonds = preprocessor.preprocess_bonds()
