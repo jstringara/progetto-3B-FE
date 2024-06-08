@@ -502,9 +502,19 @@ qr = {
     for q in [0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9]
 }
 
+# build the summary table
+summary_table_quantile = pd.DataFrame({
+    'Variable': model_VI_regressors,
+    'Quantile 0.1': generate_summary(qr[0.1], model_VI_regressors),
+    'Quantile 0.2': generate_summary(qr[0.2], model_VI_regressors),
+    'Quantile 0.3': generate_summary(qr[0.3], model_VI_regressors),
+    'Quantile 0.4': generate_summary(qr[0.4], model_VI_regressors),
+    'Quantile 0.6': generate_summary(qr[0.6], model_VI_regressors),
+    'Quantile 0.7': generate_summary(qr[0.7], model_VI_regressors),
+    'Quantile 0.8': generate_summary(qr[0.8], model_VI_regressors),
+    'Quantile 0.9': generate_summary(qr[0.9], model_VI_regressors)
+})
+
 # print the summary
 print('\n --- Quantile Regression Model --- \n')
-for q in qr:
-    print(f'Quantile {q}')
-    print(qr[q].summary())
-    print('\n')
+print(summary_table_quantile)
