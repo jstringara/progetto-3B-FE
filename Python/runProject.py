@@ -517,3 +517,8 @@ summary_table_quantile = pd.DataFrame({
 # print the summary
 print('\n --- Quantile Regression Model --- \n')
 print(summary_table_quantile)
+
+# save the tables
+summary_table.to_csv('summary_table.csv', index=False)
+summary_table_robustness.to_csv('summary_table_robustness.csv', index=False)
+summary_table_quantile.to_csv('summary_table_quantile.csv', index=False)
