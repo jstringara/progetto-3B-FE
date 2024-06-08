@@ -289,6 +289,44 @@ model_IV = run_linear_regression(regression_df, model_IV_regressors, 'Diff C-spr
 # model V
 model_V_regressors = ['WTI', 'SPX', 'VIX', 'Garch Volatility', '(Intercept)']
 
+model_V = run_linear_regression(regression_df, model_V_regressors, 'Diff C-spread', 'V')
+
+# build a table to summarize the 6 regressions
+def generate_summary(model: OLS, regressors: list)-> list[str]:
+    """
+    Generates a summary of the model.
+    """
+
+    # iterate over the regressors
+    out = []
+    for regressor in regressors:
+        # check if it exists in the model
+        coeff = model.params.get(regressor, None)
+        pvalue = model.pvalues.get(regressor, None)
+
+        if coeff is None:
+            out.append(" " * 6)
+            continue
+        
+        s = f"{coeff:.2f} {'*' * sum([pvalue < level for level in [0.1, 0.05, 0.01]])}"
+
+        # pad the string to be 6 characters
+        out.append(f"{s:^6}")
+
+    return out
+
+summary_table = pd.DataFrame({
+    'Variable': model_VI_regressors,
+    'Model I': generate_summary(model_I, model_VI_regressors),
+    'Model II': generate_summary(model_II, model_VI_regressors),
+    'Model III': generate_summary(model_III, model_VI_regressors),
+    'Model IV': generate_summary(model_IV, model_VI_regressors),
+    'Model V': generate_summary(model_V, model_VI_regressors),
+    'Model VI': generate_summary(model_VI, model_VI_regressors)
+})
+
+print('\n --- Summary Table --- \n')
+print(summary_table)
 
 # fit the quantile regression
 X = regression_df[model_V_regressors]
