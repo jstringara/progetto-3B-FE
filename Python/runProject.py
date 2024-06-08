@@ -24,6 +24,7 @@ from bootstrap import Bootstrap
 from spreads import C_spread, Z_spread
 
 PHASE_III_END = datetime.datetime(2021, 1, 1)
+PHASE_IV_END = datetime.datetime(2022, 10, 28)
 
 # initialize the plotter
 plotter = Plotter()
@@ -359,6 +360,28 @@ regression_ewma['Volatility'] = ewma_volatility[
 
 # fit the linear regression
 model_ewma = run_linear_regression(regression_df, model_VI_regressors, 'Diff C-spread', 'EWMA')
+
+# PHASE IV model
+
+regression_phase_IV = pd.DataFrame(data = {
+    'Date': Daily[Daily['Date'] < PHASE_IV_END]['Date'].values,
+    'Diff C-spread': C[C['Date'] < PHASE_IV_END]['C-spread'].diff().values,
+    'Diff C-spread Lag 1': C[C['Date'] < PHASE_IV_END]['C-spread'].diff().shift(1).values,
+    'Diff C-spread Lag 2': C[C['Date'] < PHASE_IV_END]['C-spread'].diff().shift(2).values,
+    'Diff C-spread Lag 3': C[C['Date'] < PHASE_IV_END]['C-spread'].diff().shift(3).values,
+    'Diff Z-spread': Z[Z['Date'] < PHASE_IV_END]['Z-spread'].diff().values,
+    'Diff Risk Free Rate': R[R['Date'] < PHASE_IV_END]['Risk Free Rate'].diff().values,
+    'ECT Lag 1': ect.shift(1).values,
+    'WTI': Extra[Extra['Date'] < PHASE_IV_END]['WTI'].values,
+    'SPX': Extra[Extra['Date'] < PHASE_IV_END]['SPX'].values,
+    'VIX': Extra[Extra['Date'] < PHASE_IV_END]['VIX'].values,
+    'Volatility': volatility[volatility['Date'] < PHASE_IV_END]['Volatility'].values,
+    '(Intercept)': 1
+})
+regression_phase_IV = regression_phase_IV.dropna()
+
+# fit the linear regression
+model_phase_IV = run_linear_regression(regression_phase_IV, model_IV_regressors, 'Diff C-spread', 'IV Phase IV')
 
 # Quantile Regression
 
