@@ -216,8 +216,8 @@ model = arch_model(log_returns['Log Returns'].dropna().values * 10, vol='Garch',
 fit = model.fit(disp='off')
 
 # print the summary
-print('\n --- GARCH(1, 1) Model --- \n')
-print(fit.summary())
+# print('\n --- GARCH(1, 1) Model --- \n')
+# print(fit.summary())
 
 # create the volatility dataframe
 volatility = pd.DataFrame({
@@ -252,7 +252,7 @@ def build_regression_df(C, Z, R, ect, Extra, volatility, end_date):
 
     return regression_df
 
-def run_linear_regression(table, regressors_list, dependent_variable, model_name):
+def run_linear_regression(table, regressors_list, dependent_variable, model_name, display=True):
     """
     Runs a linear regression on the given table with the given regressors and dependent variable.
     
@@ -268,8 +268,9 @@ def run_linear_regression(table, regressors_list, dependent_variable, model_name
     model = OLS(Y, X).fit()
 
     # print the summary
-    print(f'\n --- Linear Regression Model {model_name} --- \n')
-    print(model.summary())
+    if display:
+        print(f'\n --- Linear Regression Model {model_name} --- \n')
+        print(model.summary())
 
     return model
 
@@ -288,20 +289,20 @@ model_VI = run_linear_regression(regression_df, model_VI_regressors, 'Diff C-spr
 model_I_regressors = ['Diff C-spread Lag 1', 'Diff C-spread Lag 2', 'Diff C-spread Lag 3',
     'ECT Lag 1', '(Intercept)']
 
-model_I = run_linear_regression(regression_df, model_I_regressors, 'Diff C-spread', 'I')
+model_I = run_linear_regression(regression_df, model_I_regressors, 'Diff C-spread', 'I', display=False)
 
 # model II
 
 model_II_regressors = ['Diff C-spread Lag 1', 'Diff C-spread Lag 2', 'Diff C-spread Lag 3',
     'Diff Z-spread', 'Diff Risk Free Rate', 'ECT Lag 1', '(Intercept)']
 
-model_II = run_linear_regression(regression_df, model_II_regressors, 'Diff C-spread', 'II')
+model_II = run_linear_regression(regression_df, model_II_regressors, 'Diff C-spread', 'II', display=False)
 
 # model III
 
 model_III_regressors = ['WTI', '(Intercept)']
 
-model_III = run_linear_regression(regression_df, model_III_regressors, 'Diff C-spread', 'III')
+model_III = run_linear_regression(regression_df, model_III_regressors, 'Diff C-spread', 'III', display=False)
 
 # model IV
 
@@ -313,7 +314,7 @@ model_IV = run_linear_regression(regression_df, model_IV_regressors, 'Diff C-spr
 # model V
 model_V_regressors = ['WTI', 'SPX', 'VIX', 'Volatility', '(Intercept)']
 
-model_V = run_linear_regression(regression_df, model_V_regressors, 'Diff C-spread', 'V')
+model_V = run_linear_regression(regression_df, model_V_regressors, 'Diff C-spread', 'V', display=False)
 
 # build a table to summarize the 6 regressions
 def generate_summary(model: OLS, regressors: list)-> list[str]:
@@ -378,7 +379,7 @@ ewma_volatility = pd.DataFrame(
 regression_ewma = build_regression_df(C, Z, R, ect, Extra, ewma_volatility, PHASE_III_END)
 
 # fit the linear regression
-model_ewma = run_linear_regression(regression_df, model_VI_regressors, 'Diff C-spread', 'EWMA')
+model_ewma = run_linear_regression(regression_df, model_VI_regressors, 'Diff C-spread', 'EWMA', display=False)
 
 # PHASE IV model
 
@@ -401,7 +402,7 @@ regression_phase_IV = build_regression_df(C, Z, R, ect, Extra, volatility, PHASE
 
 # fit the linear regression
 model_phase_IV = run_linear_regression(regression_phase_IV, model_IV_regressors,
-    'Diff C-spread', 'Phase IV')
+    'Diff C-spread', 'Phase IV', display=False)
 
 # Regression with rollover rule of open interest
 c_spread.aggregate('open interest')
@@ -428,7 +429,7 @@ regression_open_interest = build_regression_df(C_open_interest, Z, R, ect_open_i
 
 # fit the linear regression
 model_open_interest = run_linear_regression(regression_open_interest, model_VI_regressors,
-    'Diff C-spread', 'Open Interest')
+    'Diff C-spread', 'Open Interest', display=False)
 
 # Regression with rollover rule of one month
 c_spread.aggregate('month')
@@ -452,7 +453,7 @@ regression_one_month = build_regression_df(C_one_month, Z, R, ect_one_month, Ext
 
 # fit the linear regression
 model_one_month = run_linear_regression(regression_one_month, model_VI_regressors,
-    'Diff C-spread', 'VI One Month')
+    'Diff C-spread', 'VI One Month', display=False)
 
 # Regression with rollover rule of one week
 c_spread.aggregate('week')
@@ -475,7 +476,7 @@ regression_one_week = build_regression_df(C_one_week, Z, R, ect_one_week, Extra,
 
 # fit the linear regression
 model_one_week = run_linear_regression(regression_one_week, model_VI_regressors,
-    'Diff C-spread', 'VI One Week')
+    'Diff C-spread', 'VI One Week', display=False)
 
 # Summary table of the robustness checks
 summary_table_robustness = pd.DataFrame({
