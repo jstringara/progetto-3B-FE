@@ -282,3 +282,24 @@ class Plotter:
             fig.savefig('plot_garch.png')
 
         plt.show()
+
+    def plot_ewma(self, log_returns:np.array, ewma:np.array, save:bool=True)->None:
+        """
+        Plot the exponentially weighted moving average.
+        If save is True, save the plot as a .png file.
+        """
+
+        fig, ax = plt.subplots()
+
+        # plot the data
+        ax.plot(log_returns ** 2, color='red')
+        ax.plot(ewma ** 2, color='blue')
+        ax.set_title('Exponentially Weighted Moving Average')
+        ax.set_xlabel('Time')
+        ax.set_ylabel('Log Returns')
+        plt.legend(['Squared Log Returns', 'EWMA'])
+        
+        if save:
+            fig.savefig('plot_ewma.png')
+
+        plt.show()

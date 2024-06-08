@@ -209,7 +209,7 @@ volatility = pd.DataFrame({
     'Volatility': [np.nan] + fit.conditional_volatility.tolist()
 })
 
-# plotter.plot_garch(log_returns, fit)
+plotter.plot_garch(log_returns['Log Returns'].values, fit)
 
 # build the dataframe for the regression
 regression_df = pd.DataFrame({
@@ -327,6 +327,30 @@ summary_table = pd.DataFrame({
 
 print('\n --- Summary Table --- \n')
 print(summary_table)
+
+# Robustness Check
+
+# introduce the EWMA volatility
+ewma_volatility = np.zeros(len(log_returns))
+ewma_volatility[0] = log_returns['Log Returns'].std() ** 2
+_lambda = 0.95
+
+for i in range(1, len(log_returns)):
+    ewma_volatility[i] = (
+        _lambda * ewma_volatility[i - 1] +
+        (1 - _lambda) * log_returns['Log Returns'].iloc[i] ** 2
+    )
+
+ewma_volatility = pd.DataFrame(
+    data = {
+        'Date': log_returns['Date'].values,
+        'EWMA Volatility': [np.sqrt(vol) for vol in ewma_volatility]
+    }
+)
+
+plotter.plot_ewma(log_returns['Log Returns'].values, ewma_volatility['EWMA Volatility'].values)
+
+# Quantile Regression
 
 # fit the quantile regression
 X = regression_df[model_V_regressors]
