@@ -57,10 +57,10 @@ Open_Interest = preprocessor.preprocess_open_interest()
 bootstrapper = Bootstrap(OIS_rates)
 
 # boxplot of the volumes for the different months
-# plotter.boxplot_months(Volumes_march, Volumes_june, Volumes_september, Front)
+plotter.boxplot_months(Volumes_march, Volumes_june, Volumes_september, Front, save=False)
 
 # boxplot of the volumes for the front, next and next_2 December futures
-# plotter.boxplot_december(Front, Next, Next_2)
+plotter.boxplot_december(Front, Next, Next_2, save=False)
 
 # instantiate the C-spread object
 c_spread = C_spread(Front, Next, Daily, bootstrapper, Open_Interest)
@@ -69,7 +69,7 @@ c_spread = C_spread(Front, Next, Daily, bootstrapper, Open_Interest)
 c_spread.compute()
 
 # plot the front and next C-spread
-# plotter.plot_front_next(c_spread)
+plotter.plot_front_next(c_spread, save=False)
 
 # aggregate the C-spread with the 'constant' rollover rule
 c_spread.aggregate('constant')
@@ -77,7 +77,7 @@ c_spread.aggregate('constant')
 C = c_spread.c_spread()
 
 # plot the aggregated C-spread
-# plotter.plot_C_spread(c_spread)
+plotter.plot_C_spread(c_spread, save=False)
 
 # get the bonds list
 bonds = preprocessor.preprocess_bonds()
@@ -93,7 +93,7 @@ Z = z_spread.z_spread()
 R = bootstrapper.interpolate(Front['Date'], Front['Expiry'])
 
 # plot the C-spread, Z-spread and the Risk Free Rate
-# plotter.plot_C_Z_R(c_spread, z_spread, R)
+plotter.plot_C_Z_R(c_spread, z_spread, R, save=False)
 
 # impose the Risk Free Rate to be the 3-month OIS rate
 R = pd.DataFrame()
@@ -104,7 +104,7 @@ R = R.ffill()
 R.columns = ['Date', 'Risk Free Rate']
 
 # plot the ACF and PACF of the three spreads
-# plotter.plot_ACF_PACF(c_spread, z_spread, R)
+plotter.plot_ACF_PACF(c_spread, z_spread, R, save=False)
 
 # perform the ADF GLS test on the C-spread
 test_C = DFGLS(C[C['Date'] < PHASE_III_END]['C-spread'])
@@ -224,7 +224,7 @@ volatility = pd.DataFrame({
     'Volatility': [np.nan] + fit.conditional_volatility.tolist()
 })
 
-# plotter.plot_garch(log_returns['Log Returns'].values, fit)
+plotter.plot_garch(log_returns['Log Returns'].values, fit, save=False)
 
 # build the dataframe for the regression
 def build_regression_df(C, Z, R, ect, Extra, volatility, end_date):
@@ -372,7 +372,7 @@ ewma_volatility = pd.DataFrame(
     }
 )
 
-# plotter.plot_ewma(log_returns['Log Returns'].values, ewma_volatility['EWMA Volatility'].values)
+plotter.plot_ewma(log_returns['Log Returns'].values, ewma_volatility['Volatility'].values, save=False)
 
 # copy the regression dataframe
 regression_ewma = build_regression_df(C, Z, R, ect, Extra, ewma_volatility, PHASE_III_END)
