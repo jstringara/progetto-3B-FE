@@ -139,6 +139,7 @@ print(test_R_diff.summary())
 
 # perform the johansen test on the C-spread, Z-spread and Risk-Free Rate
 Y = pd.DataFrame({
+    'Date': C[C['Date'] < PHASE_III_END]['Date'].values,
     'C-spread': C[C['Date'] < PHASE_III_END]['C-spread'].values,
     'Z-spread': Z[Z['Date'] < PHASE_III_END]['Z-spread'].values,
     'Risk Free Rate': R[R['Date'] < PHASE_III_END]['Risk Free Rate'].values
@@ -191,7 +192,7 @@ def compute_ect(data, cointegration_coefficients):
     return ect
 
 # perform the johansen test
-cointegration_coefficients = johansen_test(Y.values, -1)
+cointegration_coefficients = johansen_test(Y[['C-spread', 'Z-spread', 'Risk Free Rate']], -1)
 
 # print the cointegration coefficients
 print('\n --- Cointegration Coefficients --- \n')
@@ -227,22 +228,29 @@ volatility = pd.DataFrame({
 # plotter.plot_garch(log_returns['Log Returns'].values, fit)
 
 # build the dataframe for the regression
-regression_df = pd.DataFrame({
-    'Date': Daily[Daily['Date'] < PHASE_III_END]['Date'].values,
-    'Diff C-spread': C[C['Date'] < PHASE_III_END]['C-spread'].diff().values,
-    'Diff C-spread Lag 1': C[C['Date'] < PHASE_III_END]['C-spread'].diff().shift(1).values,
-    'Diff C-spread Lag 2': C[C['Date'] < PHASE_III_END]['C-spread'].diff().shift(2).values,
-    'Diff C-spread Lag 3': C[C['Date'] < PHASE_III_END]['C-spread'].diff().shift(3).values,
-    'Diff Z-spread': Z[Z['Date'] < PHASE_III_END]['Z-spread'].diff().values,
-    'Diff Risk Free Rate': R[R['Date'] < PHASE_III_END]['Risk Free Rate'].diff().values,
-    'ECT Lag 1': ect['ECT'].shift(1).values,
-    'WTI': Extra[Extra['Date'] < PHASE_III_END]['WTI'].values,
-    'SPX': Extra[Extra['Date'] < PHASE_III_END]['SPX'].values,
-    'VIX': Extra[Extra['Date'] < PHASE_III_END]['VIX'].values,
-    'Volatility': volatility[volatility['Date'] < PHASE_III_END]['Volatility'].values,
-    '(Intercept)': 1
-})
-regression_df = regression_df.dropna()
+def build_regression_df(C, Z, R, ect, Extra, volatility, end_date):
+    """
+    Builds the regression dataframe.
+    """
+
+    regression_df = pd.DataFrame({
+        'Date': Daily[Daily['Date'] < end_date]['Date'].values,
+        'Diff C-spread': C[C['Date'] < end_date]['C-spread'].diff().values,
+        'Diff C-spread Lag 1': C[C['Date'] < end_date]['C-spread'].diff().shift(1).values,
+        'Diff C-spread Lag 2': C[C['Date'] < end_date]['C-spread'].diff().shift(2).values,
+        'Diff C-spread Lag 3': C[C['Date'] < end_date]['C-spread'].diff().shift(3).values,
+        'Diff Z-spread': Z[Z['Date'] < end_date]['Z-spread'].diff().values,
+        'Diff Risk Free Rate': R[R['Date'] < end_date]['Risk Free Rate'].diff().values,
+        'ECT Lag 1': ect['ECT'].shift(1).values,
+        'WTI': Extra[Extra['Date'] < end_date]['WTI'].values,
+        'SPX': Extra[Extra['Date'] < end_date]['SPX'].values,
+        'VIX': Extra[Extra['Date'] < end_date]['VIX'].values,
+        'Volatility': volatility[volatility['Date'] < end_date]['Volatility'].values,
+        '(Intercept)': 1
+    })
+    regression_df = regression_df.dropna()
+
+    return regression_df
 
 def run_linear_regression(table, regressors_list, dependent_variable, model_name):
     """
@@ -266,6 +274,7 @@ def run_linear_regression(table, regressors_list, dependent_variable, model_name
     return model
 
 # Model VI
+regression_df = build_regression_df(C, Z, R, ect, Extra, volatility, PHASE_III_END)
 
 # fit the linear regression
 model_VI_regressors = ['Diff C-spread Lag 1', 'Diff C-spread Lag 2', 'Diff C-spread Lag 3',
@@ -359,18 +368,14 @@ for i in range(1, len(log_returns)):
 ewma_volatility = pd.DataFrame(
     data = {
         'Date': log_returns['Date'].values,
-        'EWMA Volatility': [np.sqrt(vol) for vol in ewma_volatility]
+        'Volatility': [np.sqrt(vol) for vol in ewma_volatility]
     }
 )
 
 # plotter.plot_ewma(log_returns['Log Returns'].values, ewma_volatility['EWMA Volatility'].values)
 
 # copy the regression dataframe
-regression_ewma = regression_df.copy()
-# swap out the volatility
-regression_ewma['Volatility'] = ewma_volatility[
-    ewma_volatility['Date'].isin(regression_ewma['Date'])
-]['EWMA Volatility'].values
+regression_ewma = build_regression_df(C, Z, R, ect, Extra, ewma_volatility, PHASE_III_END)
 
 # fit the linear regression
 model_ewma = run_linear_regression(regression_df, model_VI_regressors, 'Diff C-spread', 'EWMA')
@@ -385,27 +390,106 @@ Y_phase_IV = pd.DataFrame({
 })
 cointegration_coefficients_phase_IV = johansen_test(Y_phase_IV[['C-spread', 'Z-spread', 'Risk Free Rate']],
     -1, display=False)
-ect = compute_ect(Y_phase_IV[['C-spread', 'Z-spread', 'Risk Free Rate']], cointegration_coefficients_phase_IV)
-
-regression_phase_IV = pd.DataFrame(data = {
-    'Date': Daily[Daily['Date'] < PHASE_IV_END]['Date'].values,
-    'Diff C-spread': C[C['Date'] < PHASE_IV_END]['C-spread'].diff().values,
-    'Diff C-spread Lag 1': C[C['Date'] < PHASE_IV_END]['C-spread'].diff().shift(1).values,
-    'Diff C-spread Lag 2': C[C['Date'] < PHASE_IV_END]['C-spread'].diff().shift(2).values,
-    'Diff C-spread Lag 3': C[C['Date'] < PHASE_IV_END]['C-spread'].diff().shift(3).values,
-    'Diff Z-spread': Z[Z['Date'] < PHASE_IV_END]['Z-spread'].diff().values,
-    'Diff Risk Free Rate': R[R['Date'] < PHASE_IV_END]['Risk Free Rate'].diff().values,
-    'ECT Lag 1': ect.shift(1).values,
-    'WTI': Extra[Extra['Date'] < PHASE_IV_END]['WTI'].values,
-    'SPX': Extra[Extra['Date'] < PHASE_IV_END]['SPX'].values,
-    'VIX': Extra[Extra['Date'] < PHASE_IV_END]['VIX'].values,
-    'Volatility': volatility[volatility['Date'] < PHASE_IV_END]['Volatility'].values,
-    '(Intercept)': 1
+ect = compute_ect(Y_phase_IV[['C-spread', 'Z-spread', 'Risk Free Rate']],
+    cointegration_coefficients_phase_IV)
+ect = pd.DataFrame(data = {
+    'Date': C[C['Date'] < PHASE_IV_END]['Date'].values,
+    'ECT': ect
 })
-regression_phase_IV = regression_phase_IV.dropna()
+
+regression_phase_IV = build_regression_df(C, Z, R, ect, Extra, volatility, PHASE_IV_END)
 
 # fit the linear regression
-model_phase_IV = run_linear_regression(regression_phase_IV, model_IV_regressors, 'Diff C-spread', 'IV Phase IV')
+model_phase_IV = run_linear_regression(regression_phase_IV, model_IV_regressors,
+    'Diff C-spread', 'Phase IV')
+
+# Regression with rollover rule of open interest
+c_spread.aggregate('open interest')
+C_open_interest = c_spread.c_spread()
+
+# build the dataframe for the ECT
+Y_open_interest = Y.copy()
+Y_open_interest['C-spread'] = C_open_interest[
+    C_open_interest['Date'].isin(Y_open_interest['Date'])]['C-spread'].values
+
+# perform the johansen test and compute the ECT
+cointegration_coefficients_open_interest = johansen_test(Y_open_interest[
+    ['C-spread', 'Z-spread', 'Risk Free Rate']].values, -1, display=False)
+ect_open_interest = compute_ect(Y_open_interest[['C-spread', 'Z-spread', 'Risk Free Rate']],
+    cointegration_coefficients_open_interest)
+ect_open_interest = pd.DataFrame(data = {
+    'Date': C_open_interest[C_open_interest['Date'] < PHASE_III_END]['Date'].values,
+    'ECT': ect_open_interest
+})
+
+# build the dataframe for the regression
+regression_open_interest = build_regression_df(C_open_interest, Z, R, ect_open_interest, Extra,
+    volatility, PHASE_III_END)
+
+# fit the linear regression
+model_open_interest = run_linear_regression(regression_open_interest, model_VI_regressors,
+    'Diff C-spread', 'Open Interest')
+
+# Regression with rollover rule of one month
+c_spread.aggregate('month')
+C_one_month = c_spread.c_spread()
+
+Y_one_month = Y.copy()
+Y_one_month['C-spread'] = C_one_month[C_one_month['Date'].isin(Y_one_month['Date'])]['C-spread'].values
+
+cointegration_coefficients_one_month = johansen_test(Y_one_month[
+    ['C-spread', 'Z-spread', 'Risk Free Rate']].values, -1, display=False)
+ect_one_month = compute_ect(Y_one_month[['C-spread', 'Z-spread', 'Risk Free Rate']],
+    cointegration_coefficients_one_month)
+ect_one_month = pd.DataFrame(data = {
+    'Date': C_one_month[C_one_month['Date'] < PHASE_III_END]['Date'].values,
+    'ECT': ect_one_month
+})
+
+# build the dataframe for the regression
+regression_one_month = build_regression_df(C_one_month, Z, R, ect_one_month, Extra, volatility,
+    PHASE_III_END)
+
+# fit the linear regression
+model_one_month = run_linear_regression(regression_one_month, model_VI_regressors,
+    'Diff C-spread', 'VI One Month')
+
+# Regression with rollover rule of one week
+c_spread.aggregate('week')
+C_one_week = c_spread.c_spread()
+
+Y_one_week = Y.copy()
+Y_one_week['C-spread'] = C_one_week[C_one_week['Date'] < PHASE_III_END]['C-spread'].values
+
+cointegration_coefficients_one_week = johansen_test(Y_one_week[
+    ['C-spread', 'Z-spread', 'Risk Free Rate']].values, -1, display=False)
+ect_one_week = compute_ect(Y_one_week[['C-spread', 'Z-spread', 'Risk Free Rate']],
+    cointegration_coefficients_one_week)
+ect_one_week = pd.DataFrame(data = {
+    'Date': C_one_week[C_one_week['Date'] < PHASE_III_END]['Date'].values,
+    'ECT': ect_one_week
+})
+
+regression_one_week = build_regression_df(C_one_week, Z, R, ect_one_week, Extra, volatility,
+    PHASE_III_END)
+
+# fit the linear regression
+model_one_week = run_linear_regression(regression_one_week, model_VI_regressors,
+    'Diff C-spread', 'VI One Week')
+
+# Summary table of the robustness checks
+summary_table_robustness = pd.DataFrame({
+    'Variable': model_VI_regressors,
+    'Model VI': generate_summary(model_VI, model_VI_regressors),
+    'EWMA': generate_summary(model_ewma, model_VI_regressors),
+    'Phase IV': generate_summary(model_phase_IV, model_VI_regressors),
+    'Open Interest': generate_summary(model_open_interest, model_VI_regressors),
+    'One Month': generate_summary(model_one_month, model_VI_regressors),
+    'One Week': generate_summary(model_one_week, model_VI_regressors)
+})
+
+print('\n --- Summary Table Robustness --- \n')
+print(summary_table_robustness)
 
 # Quantile Regression
 
