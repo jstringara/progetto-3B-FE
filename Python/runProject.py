@@ -144,7 +144,7 @@ Y = pd.DataFrame({
     'Risk Free Rate': R[R['Date'] < PHASE_III_END]['Risk Free Rate'].values
 })
 
-def johansen_test(data, det_order, k_ar_diff=1):
+def johansen_test(data, det_order, k_ar_diff=1, display=True):
     """
     Performs the Johansen cointegration test and prints the results.
     
@@ -157,9 +157,6 @@ def johansen_test(data, det_order, k_ar_diff=1):
     k_ar_diff (int): The number of lags to include in the VAR model.
     """
     result = coint_johansen(data, det_order, k_ar_diff)
-    
-    # print the matrix
-    print('\n --- Johansen Cointegration Test --- \n')
 
     df = pd.DataFrame(data = {
         'Test': ['q <= 0', 'q <= 1', 'q <= 2'],
@@ -173,22 +170,39 @@ def johansen_test(data, det_order, k_ar_diff=1):
         'Eig Stat 90%': result.cvm[:, 2]
     })
 
-    print(df.round(2))
+    if display:
+        # print the matrix
+        print('\n --- Johansen Cointegration Test --- \n')
+        print(df.round(2))
 
-    return result
+    # return the cointegration test result
+    return result.evec[:, 0] / result.evec[0, 0]
+
+def compute_ect(data, cointegration_coefficients):
+    """
+    Compute the Error Correction Term given the data and the cointegration coefficients.
+    """
+
+    ect = np.zeros(len(data))
+
+    for i in range(len(cointegration_coefficients)):
+        ect += cointegration_coefficients[i] * data.iloc[:, i]
+    
+    return ect
 
 # perform the johansen test
-johansen_result = johansen_test(Y.values, -1)
-
-# get the eigenvector corresponding to the largest eigenvalue
-cointegration_coefficients = johansen_result.evec[:, 0] / johansen_result.evec[0, 0]
+cointegration_coefficients = johansen_test(Y.values, -1)
 
 # print the cointegration coefficients
 print('\n --- Cointegration Coefficients --- \n')
 print(cointegration_coefficients.round(2))
 
 # build the ECT
-ect = Y['C-spread'] + cointegration_coefficients[1] * Y['Z-spread'] + cointegration_coefficients[2] * Y['Risk Free Rate']
+ect = compute_ect(Y[['C-spread', 'Z-spread', 'Risk Free Rate']], cointegration_coefficients)
+ect = pd.DataFrame(data = {
+    'Date': C[C['Date'] < PHASE_III_END]['Date'].values,
+    'ECT': ect
+})
 
 # build a GARCH(1, 1) model for the variance of the daily price
 log_returns = pd.DataFrame({
@@ -221,7 +235,7 @@ regression_df = pd.DataFrame({
     'Diff C-spread Lag 3': C[C['Date'] < PHASE_III_END]['C-spread'].diff().shift(3).values,
     'Diff Z-spread': Z[Z['Date'] < PHASE_III_END]['Z-spread'].diff().values,
     'Diff Risk Free Rate': R[R['Date'] < PHASE_III_END]['Risk Free Rate'].diff().values,
-    'ECT Lag 1': ect.shift(1).values,
+    'ECT Lag 1': ect['ECT'].shift(1).values,
     'WTI': Extra[Extra['Date'] < PHASE_III_END]['WTI'].values,
     'SPX': Extra[Extra['Date'] < PHASE_III_END]['SPX'].values,
     'VIX': Extra[Extra['Date'] < PHASE_III_END]['VIX'].values,
@@ -362,6 +376,16 @@ regression_ewma['Volatility'] = ewma_volatility[
 model_ewma = run_linear_regression(regression_df, model_VI_regressors, 'Diff C-spread', 'EWMA')
 
 # PHASE IV model
+
+# estimate the ECT
+Y_phase_IV = pd.DataFrame({
+    'C-spread': C[C['Date'] < PHASE_IV_END]['C-spread'].values,
+    'Z-spread': Z[Z['Date'] < PHASE_IV_END]['Z-spread'].values,
+    'Risk Free Rate': R[R['Date'] < PHASE_IV_END]['Risk Free Rate'].values
+})
+cointegration_coefficients_phase_IV = johansen_test(Y_phase_IV[['C-spread', 'Z-spread', 'Risk Free Rate']],
+    -1, display=False)
+ect = compute_ect(Y_phase_IV[['C-spread', 'Z-spread', 'Risk Free Rate']], cointegration_coefficients_phase_IV)
 
 regression_phase_IV = pd.DataFrame(data = {
     'Date': Daily[Daily['Date'] < PHASE_IV_END]['Date'].values,
