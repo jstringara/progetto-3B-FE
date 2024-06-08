@@ -309,7 +309,7 @@ model_III = run_linear_regression(regression_df, model_III_regressors, 'Diff C-s
 model_IV_regressors = ['Diff C-spread Lag 1', 'Diff C-spread Lag 2', 'Diff C-spread Lag 3',
     'Diff Z-spread', 'Diff Risk Free Rate', 'ECT Lag 1', 'WTI', '(Intercept)']
 
-model_IV = run_linear_regression(regression_df, model_IV_regressors, 'Diff C-spread', 'IV')
+model_IV = run_linear_regression(regression_df, model_IV_regressors, 'Diff C-spread', 'IV', display=False)
 
 # model V
 model_V_regressors = ['WTI', 'SPX', 'VIX', 'Volatility', '(Intercept)']
