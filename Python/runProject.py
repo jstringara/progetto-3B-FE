@@ -14,7 +14,8 @@ from arch import arch_model
 from arch.unitroot import DFGLS
 from statsmodels.tsa.vector_ar.vecm import coint_johansen, VECM
 from statsmodels.regression.linear_model import OLS
-from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+# quantile regression
+from statsmodels.regression.quantile_regression import QuantReg
 
 # custom imports
 from preprocess import Preprocessor
@@ -241,3 +242,17 @@ regression = OLS(Y, X).fit()
 # print the summary
 print('\n --- Linear Regression Model --- \n')
 print(regression.summary())
+
+
+# fit the quantile regression
+qr = {
+    q: QuantReg(Y, X).fit(q=q)
+    for q in [0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9]
+}
+
+# print the summary
+print('\n --- Quantile Regression Model --- \n')
+for q in qr:
+    print(f'Quantile {q}')
+    print(qr[q].summary())
+    print('\n')
