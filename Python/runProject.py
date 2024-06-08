@@ -224,27 +224,75 @@ regression_df = pd.DataFrame({
     'WTI': Extra[Extra['Date'] < PHASE_III_END]['WTI'].values,
     'SPX': Extra[Extra['Date'] < PHASE_III_END]['SPX'].values,
     'VIX': Extra[Extra['Date'] < PHASE_III_END]['VIX'].values,
-    'Garch Volatility': volatility[volatility['Date'] < PHASE_III_END]['Volatility'].values
+    'Garch Volatility': volatility[volatility['Date'] < PHASE_III_END]['Volatility'].values,
+    '(Intercept)': 1
 })
 regression_df = regression_df.dropna()
+
+def run_linear_regression(table, regressors_list, dependent_variable, model_name):
+    """
+    Runs a linear regression on the given table with the given regressors and dependent variable.
+    
+    Parameters:
+    table (pandas.DataFrame): The table containing the data.
+    regressors_list (list): The list of regressors to include in the regression.
+    dependent_variable (str): The name of the dependent variable.
+    """
+    X = table[regressors_list]
+    Y = table[dependent_variable]
+
+    # fit the linear regression
+    model = OLS(Y, X).fit()
+
+    # print the summary
+    print(f'\n --- Linear Regression Model {model_name} --- \n')
+    print(model.summary())
+
+    return model
+
+# Model VI
 
 # fit the linear regression
 model_VI_regressors = ['Diff C-spread Lag 1', 'Diff C-spread Lag 2', 'Diff C-spread Lag 3',
     'Diff Z-spread', 'Diff Risk Free Rate', 'ECT Lag 1', 'WTI', 'SPX', 'VIX',
-    'Garch Volatility']
-X = regression_df[model_VI_regressors]
+    'Garch Volatility', '(Intercept)']
 
-Y = regression_df['Diff C-spread']
+model_VI = run_linear_regression(regression_df, model_VI_regressors, 'Diff C-spread', 'VI')
 
-# fit the linear regression
-regression = OLS(Y, X).fit()
+# model I
 
-# print the summary
-print('\n --- Linear Regression Model --- \n')
-print(regression.summary())
+model_I_regressors = ['Diff C-spread Lag 1', 'Diff C-spread Lag 2', 'Diff C-spread Lag 3',
+    'ECT Lag 1', '(Intercept)']
+
+model_I = run_linear_regression(regression_df, model_I_regressors, 'Diff C-spread', 'I')
+
+# model II
+
+model_II_regressors = ['Diff C-spread Lag 1', 'Diff C-spread Lag 2', 'Diff C-spread Lag 3',
+    'Diff Z-spread', 'Diff Risk Free Rate', 'ECT Lag 1', '(Intercept)']
+
+model_II = run_linear_regression(regression_df, model_II_regressors, 'Diff C-spread', 'II')
+
+# model III
+
+model_III_regressors = ['WTI', '(Intercept)']
+
+model_III = run_linear_regression(regression_df, model_III_regressors, 'Diff C-spread', 'III')
+
+# model IV
+
+model_IV_regressors = ['Diff C-spread Lag 1', 'Diff C-spread Lag 2', 'Diff C-spread Lag 3',
+    'Diff Z-spread', 'Diff Risk Free Rate', 'ECT Lag 1', 'WTI', '(Intercept)']
+
+model_IV = run_linear_regression(regression_df, model_IV_regressors, 'Diff C-spread', 'IV')
+
+# model V
+model_V_regressors = ['WTI', 'SPX', 'VIX', 'Garch Volatility', '(Intercept)']
 
 
 # fit the quantile regression
+X = regression_df[model_V_regressors]
+Y = regression_df['Diff C-spread']
 qr = {
     q: QuantReg(Y, X).fit(q=q)
     for q in [0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9]
