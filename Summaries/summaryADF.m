@@ -20,7 +20,7 @@ function T = summaryADF(C_spread, Z_spread, risk_free_rate, save_table)
     adftest(diff(Z_spread.Z_Spread));
 
 [h, pValue_risk_free_rate, stat_risk_free_rate, cValue_risk_free_rate] = ...
-    adf_gla_test(risk_free_rate.Risk_Free_Rate);
+    adftest(risk_free_rate.Risk_Free_Rate);
 [h_diff, pValue_risk_free_rate_diff, stat_risk_free_rate_diff, cValue_risk_free_rate_diff] = ...
     adftest(diff(risk_free_rate.Risk_Free_Rate));
 
