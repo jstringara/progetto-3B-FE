@@ -9,10 +9,9 @@
 import numpy as np
 import pandas as pd
 import datetime
-from matplotlib import pyplot as plt
 from arch import arch_model
 from arch.unitroot import DFGLS
-from statsmodels.tsa.vector_ar.vecm import coint_johansen, VECM
+from statsmodels.tsa.vector_ar.vecm import coint_johansen
 from statsmodels.regression.linear_model import OLS
 # quantile regression
 from statsmodels.regression.quantile_regression import QuantReg
