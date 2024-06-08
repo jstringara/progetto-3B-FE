@@ -209,7 +209,7 @@ volatility = pd.DataFrame({
     'Volatility': [np.nan] + fit.conditional_volatility.tolist()
 })
 
-plotter.plot_garch(log_returns['Log Returns'].values, fit)
+# plotter.plot_garch(log_returns['Log Returns'].values, fit)
 
 # build the dataframe for the regression
 regression_df = pd.DataFrame({
@@ -224,7 +224,7 @@ regression_df = pd.DataFrame({
     'WTI': Extra[Extra['Date'] < PHASE_III_END]['WTI'].values,
     'SPX': Extra[Extra['Date'] < PHASE_III_END]['SPX'].values,
     'VIX': Extra[Extra['Date'] < PHASE_III_END]['VIX'].values,
-    'Garch Volatility': volatility[volatility['Date'] < PHASE_III_END]['Volatility'].values,
+    'Volatility': volatility[volatility['Date'] < PHASE_III_END]['Volatility'].values,
     '(Intercept)': 1
 })
 regression_df = regression_df.dropna()
@@ -255,7 +255,7 @@ def run_linear_regression(table, regressors_list, dependent_variable, model_name
 # fit the linear regression
 model_VI_regressors = ['Diff C-spread Lag 1', 'Diff C-spread Lag 2', 'Diff C-spread Lag 3',
     'Diff Z-spread', 'Diff Risk Free Rate', 'ECT Lag 1', 'WTI', 'SPX', 'VIX',
-    'Garch Volatility', '(Intercept)']
+    'Volatility', '(Intercept)']
 
 model_VI = run_linear_regression(regression_df, model_VI_regressors, 'Diff C-spread', 'VI')
 
@@ -287,7 +287,7 @@ model_IV_regressors = ['Diff C-spread Lag 1', 'Diff C-spread Lag 2', 'Diff C-spr
 model_IV = run_linear_regression(regression_df, model_IV_regressors, 'Diff C-spread', 'IV')
 
 # model V
-model_V_regressors = ['WTI', 'SPX', 'VIX', 'Garch Volatility', '(Intercept)']
+model_V_regressors = ['WTI', 'SPX', 'VIX', 'Volatility', '(Intercept)']
 
 model_V = run_linear_regression(regression_df, model_V_regressors, 'Diff C-spread', 'V')
 
@@ -348,12 +348,22 @@ ewma_volatility = pd.DataFrame(
     }
 )
 
-plotter.plot_ewma(log_returns['Log Returns'].values, ewma_volatility['EWMA Volatility'].values)
+# plotter.plot_ewma(log_returns['Log Returns'].values, ewma_volatility['EWMA Volatility'].values)
+
+# copy the regression dataframe
+regression_ewma = regression_df.copy()
+# swap out the volatility
+regression_ewma['Volatility'] = ewma_volatility[
+    ewma_volatility['Date'].isin(regression_ewma['Date'])
+]['EWMA Volatility'].values
+
+# fit the linear regression
+model_ewma = run_linear_regression(regression_df, model_VI_regressors, 'Diff C-spread', 'EWMA')
 
 # Quantile Regression
 
 # fit the quantile regression
-X = regression_df[model_V_regressors]
+X = regression_df[model_VI_regressors]
 Y = regression_df['Diff C-spread']
 qr = {
     q: QuantReg(Y, X).fit(q=q)
