@@ -13,6 +13,7 @@ from matplotlib import pyplot as plt
 from arch import arch_model
 from arch.unitroot import DFGLS
 from statsmodels.tsa.vector_ar.vecm import coint_johansen, VECM
+from statsmodels.regression.linear_model import OLS
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 # custom imports
@@ -129,6 +130,11 @@ test_R = DFGLS(R[R['Date'] < PHASE_III_END]['Risk Free Rate'])
 print('\n --- Risk-Free Rate --- \n')
 print(test_R.summary())
 
+# perform the ADF GLS test on the Risk-Free Rate differences
+test_R_diff = DFGLS(R[R['Date'] < PHASE_III_END]['Risk Free Rate'].diff().dropna())
+print('\n --- First Difference of the Risk-Free Rate --- \n')
+print(test_R_diff.summary())
+
 # perform the johansen test on the C-spread, Z-spread and Risk-Free Rate
 Y = pd.DataFrame({
     'C-spread': C[C['Date'] < PHASE_III_END]['C-spread'].values,
@@ -183,14 +189,55 @@ print(cointegration_coefficients.round(2))
 ect = Y['C-spread'] + cointegration_coefficients[1] * Y['Z-spread'] + cointegration_coefficients[2] * Y['Risk Free Rate']
 
 # build a GARCH(1, 1) model for the variance of the daily price
-log_returns = np.log(Daily['Price']/Daily['Price'].shift(1)).dropna()
+log_returns = pd.DataFrame({
+    'Date': Daily['Date'].values,
+    'Log Returns': np.log(Daily['Price']).diff().values
+})
 
 # fit the GARCH(1, 1) model
-model = arch_model(log_returns * 10, vol='Garch', p=1, q=1)
+model = arch_model(log_returns['Log Returns'].dropna().values * 10, vol='Garch', p=1, q=1)
 fit = model.fit(disp='off')
 
 # print the summary
 print('\n --- GARCH(1, 1) Model --- \n')
 print(fit.summary())
 
+# create the volatility dataframe
+volatility = pd.DataFrame({
+    'Date': Daily['Date'].values,
+    'Volatility': [np.nan] + fit.conditional_volatility.tolist()
+})
+
 # plotter.plot_garch(log_returns, fit)
+
+# build the dataframe for the regression
+regression_df = pd.DataFrame({
+    'Date': Daily[Daily['Date'] < PHASE_III_END]['Date'].values,
+    'Diff C-spread': C[C['Date'] < PHASE_III_END]['C-spread'].diff().values,
+    'Diff C-spread Lag 1': C[C['Date'] < PHASE_III_END]['C-spread'].diff().shift(1).values,
+    'Diff C-spread Lag 2': C[C['Date'] < PHASE_III_END]['C-spread'].diff().shift(2).values,
+    'Diff C-spread Lag 3': C[C['Date'] < PHASE_III_END]['C-spread'].diff().shift(3).values,
+    'Diff Z-spread': Z[Z['Date'] < PHASE_III_END]['Z-spread'].diff().values,
+    'Diff Risk Free Rate': R[R['Date'] < PHASE_III_END]['Risk Free Rate'].diff().values,
+    'ECT Lag 1': ect.shift(1).values,
+    'WTI': Extra[Extra['Date'] < PHASE_III_END]['WTI'].values,
+    'SPX': Extra[Extra['Date'] < PHASE_III_END]['SPX'].values,
+    'VIX': Extra[Extra['Date'] < PHASE_III_END]['VIX'].values,
+    'Garch Volatility': volatility[volatility['Date'] < PHASE_III_END]['Volatility'].values
+})
+regression_df = regression_df.dropna()
+
+# fit the linear regression
+model_VI_regressors = ['Diff C-spread Lag 1', 'Diff C-spread Lag 2', 'Diff C-spread Lag 3',
+    'Diff Z-spread', 'Diff Risk Free Rate', 'ECT Lag 1', 'WTI', 'SPX', 'VIX',
+    'Garch Volatility']
+X = regression_df[model_VI_regressors]
+
+Y = regression_df['Diff C-spread']
+
+# fit the linear regression
+regression = OLS(Y, X).fit()
+
+# print the summary
+print('\n --- Linear Regression Model --- \n')
+print(regression.summary())
