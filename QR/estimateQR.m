@@ -68,6 +68,9 @@ for i = 1:length(estimates)
     end
 end
 
+% escape the row names so that '_' is not interpreted as a subscript
+T.Properties.RowNames = strrep(T.Properties.RowNames, '_', '\_');
+
 disp(T)
 
 if save_file
