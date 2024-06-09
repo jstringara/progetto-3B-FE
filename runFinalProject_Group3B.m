@@ -390,7 +390,16 @@ Y_qr = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phase_III, 
     Extra_Variables, v_garch, phase_III_dates(2));
 
 % estimate the quantile regression
-estimateQR(Y_qr, true);
+estimateQR_VI(Y_qr, true);
+
+%% Point 10.2) Model I
+
+% construct the table for the quantile regression
+Y_qr = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phase_III, ...
+    Extra_Variables, v_garch, phase_III_dates(2));
+
+% select only the needed columns
+
 
 %% Compute the elapsed time
 

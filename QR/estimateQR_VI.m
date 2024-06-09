@@ -1,4 +1,4 @@
-function T = estimateQR(Y, save_file)
+function T = estimateQR_VI(Y, save_file)
 % estimateQR estimates the quantile regression for the dataset Y
 %
 % Inputs:
