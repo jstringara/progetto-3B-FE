@@ -491,7 +491,7 @@ summary_table_robustness = pd.DataFrame({
 print('\n --- Summary Table Robustness --- \n')
 print(summary_table_robustness)
 
-# Quantile Regression
+# Quantile Regression for model VI
 
 # fit the quantile regression
 X = regression_df[model_VI_regressors]
@@ -518,7 +518,34 @@ summary_table_quantile = pd.DataFrame({
 print('\n --- Quantile Regression Model --- \n')
 print(summary_table_quantile)
 
+# Quantile regression for model I
+
+# fit the quantile regression
+X = regression_df[model_I_regressors]
+Y = regression_df['Diff C-spread']
+qr = {
+    q: QuantReg(Y, X).fit(q=q)
+    for q in [0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9]
+}
+
+# build the summary table
+summary_table_quantile_I = pd.DataFrame({
+    'Variable': model_I_regressors,
+    'Quantile 0.1': generate_summary(qr[0.1], model_I_regressors),
+    'Quantile 0.2': generate_summary(qr[0.2], model_I_regressors),
+    'Quantile 0.3': generate_summary(qr[0.3], model_I_regressors),
+    'Quantile 0.4': generate_summary(qr[0.4], model_I_regressors),
+    'Quantile 0.6': generate_summary(qr[0.6], model_I_regressors),
+    'Quantile 0.7': generate_summary(qr[0.7], model_I_regressors),
+    'Quantile 0.8': generate_summary(qr[0.8], model_I_regressors),
+    'Quantile 0.9': generate_summary(qr[0.9], model_I_regressors)
+})
+
+print('\n --- Quantile Regression Model I --- \n')
+print(summary_table_quantile_I)
+
 # save the tables
 summary_table.to_csv('summary_table.csv', index=False)
 summary_table_robustness.to_csv('summary_table_robustness.csv', index=False)
 summary_table_quantile.to_csv('summary_table_quantile.csv', index=False)
+summary_table_quantile_I.to_csv('summary_table_quantile_I.csv', index=False)
