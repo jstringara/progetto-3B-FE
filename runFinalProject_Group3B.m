@@ -184,6 +184,13 @@ mdl_VI = fitlm(Y_phase_III, ...
     'Delta_C ~ Delta_C_lag1 + Delta_C_lag2 + Delta_C_lag3 + Delta_Z + Delta_r + ect_lag1 + WTI + SPX + VIX + Volatility' ...
 );
 
+% Kolmogorov-Smirnov normality test on residuals
+[h_ks_residuals, p_ks_residuals,ks_stat_residuals] = kstest(mdl_VI.Residuals.Standardized);
+
+% Visualize results
+disp('Kolmogorov-Smirnov result for residuals:');
+fprintf(' h = %d, p = %f\n, s = %d', h_ks_residuals, p_ks_residuals,ks_stat_residuals);
+
 %% Point 8.5 Various models
 
 %% Model I
@@ -361,6 +368,20 @@ disp(['The BIC of the model for phase IV is: ', num2str(BIC)]);
 summaryModels(mdl_ewma, mdl_phase_IV, mdl_OI, mdl_month, mdl_week, mdl_VI, true, 'Results/RobustnessResults.csv')
 
 %% Point 10) Quantile regression
+
+% Kolmogorov-Smirnov test for data normality
+h_ks = zeros(1, size(Y_phase_III, 2));
+p_ks = zeros(1, size(Y_phase_III, 2));
+
+for i = 1:size(Y_phase_III, 2)
+    [h_ks(i), p_ks(i)] = kstest((Y_phase_III{:, i}-mean(Y_phase_III{:, i})/std(Y_phase_III{:, i})));
+end
+
+% Visualize results
+disp('Kolmogorov Smirnof results for each covariate:');
+for i = 1:size(Y_phase_III, 2)
+    fprintf('Colonna %d: h = %d, p = %f\n', i, h_ks(i), p_ks(i));
+end
 
 %% Point 10.1) Model VI
 
