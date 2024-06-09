@@ -237,6 +237,8 @@ title('EWMA Variance of the Log Returns of the EUA Futures')
 legend('Realized Variance', 'EWMA Variance')
 xlabel('Date')
 
+v_ewma = sqrt(v_ewma);
+
 % use only the phase_III_dates
 v_ewma_phase_III = v_ewma(Daily_Future.Date < phase_III_dates(2));
 
