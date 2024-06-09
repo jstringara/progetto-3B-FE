@@ -16,7 +16,7 @@ X = rmmissing(X);
 
 % create the Table to hold the results
 T = table('Size', [4, 4], 'VariableTypes', {'string', 'string', 'string', 'string'}, ...
-    'VariableNames', {'SPX', 'VIX', 'WTI', 'Variance'}, 'RowNames', {'SPX', 'VIX', 'WTI', 'Variance'});
+    'VariableNames', {'SPX', 'VIX', 'WTI', 'Volatility'}, 'RowNames', {'SPX', 'VIX', 'WTI', 'Volatility'});
 
 % fill the table with the correlation coefficients (only the lower triangular part)
 for i = 1:4

@@ -161,6 +161,9 @@ title('Simulated Variance of the Log Returns of the EUA Futures')
 legend('Realized Variance', 'GARCH(1,1) Variance')
 xlabel('Date')
 
+% take the root of the variance
+v_garch = sqrt(v_garch);
+
 %% Point 8.2) Plot the ACF and PACF of Delta C
 
 Delta_C = [NaN; diff(C_spread.C_Spread)];
