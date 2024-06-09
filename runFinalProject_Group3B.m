@@ -399,7 +399,10 @@ Y_qr = prepareDataRegression(C_spread, Z_spread, risk_free_rate, ect_phase_III, 
     Extra_Variables, v_garch, phase_III_dates(2));
 
 % select only the needed columns
+Y_qr = Y_qr(:, {'Delta_C', 'Delta_C_lag1', 'Delta_C_lag2', 'Delta_C_lag3', 'ect_lag1'});
 
+% estimate the quantile regression
+estimateQR_I(Y_qr, true);
 
 %% Compute the elapsed time
 
