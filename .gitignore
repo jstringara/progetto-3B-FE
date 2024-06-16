@@ -174,3 +174,6 @@ Python/preprocess/Preprocessed/
 Python/bootstrap/*.csv
 Python/spreads/*.csv
 Python/*.csv
+
+# ignore the videos
+*.mp4

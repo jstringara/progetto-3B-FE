@@ -1,0 +1,229 @@
+1
+00:00:04,400 --> 00:00:09,280
+Climate change is undoubtedly the 21st century
+biggest challenge and we must solve it together.
+
+2
+00:00:09,280 --> 00:00:13,360
+Of course, climate inaction is now the most
+economically convenient thing to do but we,
+
+3
+00:00:13,360 --> 00:00:16,360
+as a species, will have to foot
+the bill in the near future.
+
+4
+00:00:16,360 --> 00:00:22,520
+Our study reveals some key insights into how the
+Green Transition could be made financially viable.
+
+5
+00:00:22,520 --> 00:00:25,240
+Carlo, what's up? What are you doing out so early?
+
+6
+00:00:25,240 --> 00:00:27,000
+Jacopo, I'm having my morning run!
+
+7
+00:00:27,000 --> 00:00:31,600
+I saw the sun was out and took the opportunity.
+We have had some crazy weather lately.
+
+8
+00:00:31,600 --> 00:00:34,360
+Yeah, that's climate change kicking in!
+You know, I've actually been reading
+
+9
+00:00:34,360 --> 00:00:37,520
+a few papers about the European
+Union Emissions Trading Scheme.
+
+10
+00:00:37,520 --> 00:00:39,320
+Oh, really? What is it?
+
+11
+00:00:39,320 --> 00:00:43,200
+It's a way for polluters to exchange their Carbon
+Allowances, usually in the form of futures.
+
+12
+00:00:43,200 --> 00:00:46,600
+But I know it is not a very liquid
+and efficient market, isn't it?
+
+13
+00:00:46,600 --> 00:00:51,280
+Yeah, it was created back in 2005 and it was
+very volatile but we are on Phase IV now and
+
+14
+00:00:51,280 --> 00:00:53,960
+there have been a lot of reforms,
+although it 's still very costly
+
+15
+00:00:53,960 --> 00:00:56,360
+for polluters to trade.
+That's called the C-spread.
+
+16
+00:00:56,360 --> 00:00:59,480
+Oh, come on, let's meet and work on it!
+Yeah!
+
+17
+00:00:59,480 --> 00:01:05,519
+The C-spread, is defined as the following formula.
+And we use as F(t,t) the Front December futures,
+
+18
+00:01:05,519 --> 00:01:08,320
+the futures with expiry in
+December of the same year,
+
+19
+00:01:08,320 --> 00:01:13,560
+which we have found to be the most liquid
+and as S(t) we use the Daily Futures.
+
+20
+00:01:13,560 --> 00:01:16,440
+The C-spread represents the
+cost-of-carry, measuring the
+
+21
+00:01:16,440 --> 00:01:21,320
+difference between the price of Futures
+on Carbon Allowances and their spot price.
+
+22
+00:01:21,320 --> 00:01:26,000
+To compute it, we used a rollover rule
+in order to avoid irregularities and
+
+23
+00:01:26,000 --> 00:01:29,240
+have a unique time-series using
+as switch date 15th November.
+
+24
+00:01:30,280 --> 00:01:35,480
+We also considered Europe's top 10 polluters
+and computed the Z-spreads of their bonds,
+
+25
+00:01:35,480 --> 00:01:39,240
+that is the parallel shift to apply to the
+zero-rates in order to match their prices.
+
+26
+00:01:39,240 --> 00:01:43,760
+We aggregated them and computed a single
+time-series, which we called the Z-index.
+
+27
+00:01:43,760 --> 00:01:47,840
+We plotted the C-spread, Z-index and
+Risk-Free Rate in a single image.
+
+28
+00:01:47,840 --> 00:01:52,360
+As we can see the Z-index and the
+C-spread display a long run relationship.
+
+29
+00:01:52,360 --> 00:01:59,160
+We perform an ADF-GLS test and confirm that the
+three time series are integrated of order 1.
+
+30
+00:01:59,160 --> 00:02:04,280
+We also discover their cointegration
+relationship by using the Johansen procedure.
+
+31
+00:02:04,280 --> 00:02:07,640
+Since the three time-series are not stationary,
+
+32
+00:02:07,640 --> 00:02:12,840
+we took the time-series of their first-differences
+and implemented this error correction model.
+
+33
+00:02:12,840 --> 00:02:17,680
+As control variables we took three
+market indexes and the volatility
+
+34
+00:02:17,680 --> 00:02:22,000
+of the spot log-returns, which
+is estimated with a GARCH model.
+
+35
+00:02:22,000 --> 00:02:26,280
+As a result, we obtain that the
+C-spread is a mean-reverting
+
+36
+00:02:26,280 --> 00:02:31,520
+process and the Z-index is its main
+driver and this is very relevant.
+
+37
+00:02:31,520 --> 00:02:35,560
+We implemented both Quantile and Linear Regression
+
+38
+00:02:35,560 --> 00:02:40,240
+because not all hypotheses of the
+Linear Regression were satisfied.
+
+39
+00:02:40,240 --> 00:02:42,920
+And now for the missing
+piece of the C-spread puzzle.
+
+40
+00:02:42,920 --> 00:02:48,240
+For the companies involved there is an
+alternative method of financing: a Synthetic Repo.
+
+41
+00:02:48,240 --> 00:02:53,920
+That is a contract replicating the cashflows of
+a traditional repo but using a Carbon Future.
+
+42
+00:02:53,920 --> 00:02:56,520
+By analyzing the strategy we found that the payer
+
+43
+00:02:56,520 --> 00:03:01,400
+would be financing itself at the
+Risk-Free Rate plus the C-spread.
+
+44
+00:03:01,400 --> 00:03:06,920
+Finally, including Carbon Allowances into the
+list of eligible collateral for Eurosystem
+
+45
+00:03:06,920 --> 00:03:11,520
+credit operations could help address the
+inefficieny of having a positive C-spread.
+
+46
+00:03:11,520 --> 00:03:15,960
+In finance we are used to thinking
+in terms of Profits and Losses,
+
+47
+00:03:15,960 --> 00:03:18,920
+but mankind's true profit
+would be a greener planet.
+
